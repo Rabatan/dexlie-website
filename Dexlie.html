@@ -1,0 +1,4750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dexlie</title>
+<style>
+/* ---------- Reset & variables ---------- */
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #ececed;
+  --panel-bg: #ffffff;
+  --sidebar-bg: #f7f7f8;
+  --border: #ececec;
+  --border-soft: #f0f0f0;
+  --text: #18181b;
+  --text-muted: #8a8a8e;
+  --text-soft: #a1a1aa;
+  --accent: #18181b;
+  --hover: #eeeeef;
+  --active: #e9e9ea;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.icon-sm { width: 14px; height: 14px; }
+.icon-xl { width: 40px; height: 40px; stroke-width: 1.4; color: var(--text-soft); }
+
+/* ---------- App shell ---------- */
+.app-shell {
+  width: 100%;
+  height: 100vh;
+  min-height: 640px;
+  background: var(--panel-bg);
+  display: flex;
+  overflow: hidden;
+}
+
+/* ---------- Main content / view switching ---------- */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 34px 40px 40px;
+}
+
+.view { display: none; }
+.view.active { display: block; }
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 26px;
+  gap: 20px;
+}
+.page-header h1 {
+  font-size: 27px;
+  margin: 0 0 6px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+.page-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14.5px;
+}
+
+/* ---------- Empty state (stub views) ---------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 80px 20px;
+  color: var(--text-muted);
+  font-size: 14.5px;
+}
+
+/* ---------- Scrollbars ---------- */
+.main-content::-webkit-scrollbar,
+.session-history::-webkit-scrollbar { width: 8px; height: 8px; }
+.main-content::-webkit-scrollbar-thumb,
+.session-history::-webkit-scrollbar-thumb { background: #e0e0e2; border-radius: 8px; }
+.main-content::-webkit-scrollbar-track,
+.session-history::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Shared components ---------- */
+/* Widgets reused across several pages: buttons, panels, badges, task rows,
+   collapsible sections, and assignment groups. Page-only styles belong in
+   that page's own CSS file instead. */
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { background: #fafafa; }
+.btn-sm { padding: 7px 12px; font-size: 13px; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #2b2b2f; }
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.icon-btn:hover { background: var(--hover); color: var(--text); }
+.icon-btn.bordered { border: 1px solid var(--border); }
+.icon-btn.bordered.active { background: var(--active); color: var(--text); }
+.icon-btn.round { border-radius: 50%; width: 30px; height: 30px; background: #f4f4f5; color: var(--text); }
+.icon-btn.round:hover { background: #e4e4e7; }
+
+.dot-badge {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  margin-left: -12px;
+  margin-top: -18px;
+}
+.btn-icon { position: relative; }
+
+/* Panels */
+.panel {
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 22px;
+}
+.panel.inner-panel { margin-top: 20px; margin-bottom: 0; padding: 20px; }
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+.panel-header h2 { font-size: 16.5px; margin: 0; font-weight: 700; }
+.panel-title-sm { font-size: 15px; font-weight: 700; margin: 0 0 14px; }
+.panel-header-actions { display: flex; align-items: center; gap: 10px; }
+
+.badge {
+  background: #f4f4f5;
+  color: #6b6b70;
+  font-size: 12.5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+/* Task rows (Dashboard, Tasks, Pomodoro) */
+.task-list { display: flex; flex-direction: column; }
+.task-list.collapsed { display: none; }
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 2px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.task-row:last-child { border-bottom: none; }
+
+.checkbox {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: 1.6px solid #d4d4d8;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s, border-color .12s;
+}
+.checkbox .icon { width: 12px; height: 12px; opacity: 0; stroke: #fff; stroke-width: 3; }
+.checkbox.checked { background: var(--accent); border-color: var(--accent); }
+.checkbox.checked .icon { opacity: 1; }
+
+.task-row.completed .task-title { text-decoration: line-through; color: var(--text-soft); }
+
+.task-title { flex: 1; font-size: 14.5px; color: #27272a; }
+.task-meta {
+  color: var(--text-soft);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.meta-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-soft); }
+
+.section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #52525b;
+  cursor: pointer;
+  padding: 4px 2px 10px;
+}
+
+/* Assignment groups (Tasks and Pomodoro pages) */
+.assignment {
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-top: 10px;
+}
+.assignment-header { display: flex; align-items: center; gap: 12px; }
+.assignment-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #f4f4f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.assignment-name { font-size: 14.5px; font-weight: 600; }
+.assignment-count { color: var(--text-soft); font-size: 13px; margin-left: 2px; }
+.assignment-progress { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.progress-frac { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+.chev-toggle { color: var(--text-soft); margin-left: auto; cursor: pointer; }
+
+.progress-bar {
+  width: 110px;
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 999px;
+  overflow: hidden;
+  display: inline-block;
+}
+.progress-bar.wide { width: 100%; margin: 12px 0 10px; }
+.progress-fill { display: block; height: 100%; background: var(--accent); }
+
+.assignment-subtasks {
+  margin-top: 6px;
+  padding-left: 46px;
+}
+.assignment.collapsed .assignment-subtasks { display: none; }
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  width: 264px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 22px 16px 18px;
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 26px;
+  justify-content: space-between;
+}
+.logo-text {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.sidebar-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sidebar-toggle-btn:hover { background: var(--hover); color: var(--text); }
+.sidebar-toggle-btn svg { transition: transform 0.2s ease; }
+
+/* ---------- Collapsed state ---------- */
+.sidebar.collapsed { width: 76px; }
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .nav-item span,
+.sidebar.collapsed .user-name,
+.sidebar.collapsed .sidebar-user .chev { display: none; }
+.sidebar.collapsed .sidebar-logo { justify-content: center; }
+.sidebar.collapsed .sidebar-toggle-btn svg { transform: rotate(180deg); }
+.sidebar.collapsed .nav-item { justify-content: center; }
+.sidebar.collapsed .sidebar-user { justify-content: center; }
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10.5px 14px;
+  border-radius: 12px;
+  color: #6b6b70;
+  font-size: 14.5px;
+  cursor: pointer;
+  user-select: none;
+}
+.nav-item:hover { background: var(--hover); color: var(--text); }
+.nav-item.active { background: var(--active); color: var(--text); font-weight: 600; }
+
+.sidebar-spacer { flex: 1; }
+
+.sidebar-nav-secondary { margin-bottom: 14px; }
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 16px;
+  cursor: pointer;
+}
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e4e4e7;
+  color: #52525b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.user-name { font-size: 14px; font-weight: 600; flex: 1; }
+.chev { color: var(--text-soft); }
+
+/* ---------- Dashboard page ---------- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: #fafafa;
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  padding: 22px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ececed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.stat-title { color: #3f3f46; font-size: 14.5px; margin-bottom: 2px; }
+.stat-value { font-size: 30px; font-weight: 700; line-height: 1.25; }
+.stat-label { color: var(--text-muted); font-size: 13.5px; }
+
+.schedule-list { display: flex; flex-direction: column; }
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f7f7f7;
+}
+.schedule-item:last-child { border-bottom: none; }
+.schedule-time { width: 84px; flex-shrink: 0; color: var(--text-muted); font-size: 13.5px; }
+.schedule-dot { width: 6px; height: 6px; border-radius: 50%; background: #a1a1aa; flex-shrink: 0; }
+.schedule-title { font-size: 14.5px; color: #27272a; }
+
+/* ---------- Tasks page ---------- */
+.day-tabs {
+  display: flex;
+  gap: 26px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 22px;
+  overflow-x: auto;
+}
+.day-tab {
+  padding: 0 0 13px;
+  color: var(--text-soft);
+  font-size: 14.5px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.day-tab.active { color: var(--text); font-weight: 700; border-color: var(--accent); }
+
+.addtask-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.addtask-card {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+}
+.addtask-card:hover { border-color: #d4d4d8; background: #fafafa; }
+.addtask-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #f4f4f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.addtask-title { font-size: 14.5px; font-weight: 600; }
+.addtask-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.chev-right { margin-left: auto; color: var(--text-soft); }
+/* ---------- Pomodoro page ---------- */
+.pomodoro-layout {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.timer-panel { text-align: center; }
+
+.mode-tabs {
+  display: inline-flex;
+  background: #f4f4f5;
+  padding: 4px;
+  border-radius: 14px;
+  gap: 2px;
+  margin-bottom: 26px;
+}
+.mode-tab {
+  padding: 9px 16px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  color: #71717a;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  cursor: pointer;
+}
+.mode-tab.active { background: #fff; color: var(--text); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+.timer-wrap {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+}
+.timer-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: #ececed; stroke-width: 9; }
+.ring-progress {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-dasharray: 615.75;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.3s linear;
+}
+.timer-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.timer-label {
+  color: #71717a;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.timer-display {
+  font-size: 54px;
+  font-weight: 700;
+  letter-spacing: -1.5px;
+}
+.timer-start-btn {
+  padding: 12px 30px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,.16);
+}
+.timer-start-btn:hover { background: #2b2b2f; }
+.timer-start-btn .icon { width: 15px; height: 15px; stroke: #fff; fill: #fff; }
+
+.edit-timer-btn { margin: 22px auto 0; }
+
+.progress-stats { display: flex; justify-content: space-between; gap: 10px; }
+.progress-stat { display: flex; align-items: center; gap: 10px; text-align: left; }
+.progress-stat-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f4f4f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.progress-stat-value { font-size: 17px; font-weight: 700; }
+.progress-stat-label { font-size: 12.5px; color: var(--text-muted); }
+
+.tabs-underline { display: flex; gap: 24px; border-bottom: 1px solid var(--border); }
+.tab-underline-item {
+  padding-bottom: 12px;
+  font-size: 14.5px;
+  color: var(--text-soft);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tab-underline-item.active { color: var(--text); font-weight: 700; border-color: var(--accent); }
+
+.session-history { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; }
+.session-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 12px 16px;
+  flex-shrink: 0;
+  min-width: 168px;
+}
+.session-card .icon { color: var(--text-soft); }
+.session-time { font-size: 14px; font-weight: 700; }
+.session-type { font-size: 12.5px; color: var(--text-muted); }
+.session-clock { margin-left: auto; font-size: 12.5px; color: var(--text-soft); white-space: nowrap; }
+
+/* ---------- Notes page ---------- */
+.notes-layout {
+  display: grid;
+  grid-template-columns: 288px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.notes-sidebar {
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 9px 12px;
+  margin-bottom: 16px;
+}
+.search-box .icon { color: var(--text-soft); }
+.search-box input {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  flex: 1;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+.tree ul { padding-left: 20px; }
+.tree li:not(.open) > ul { display: none; }
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 6px;
+  border-radius: 9px;
+  font-size: 14px;
+  color: #3f3f46;
+  cursor: default;
+}
+.tree-row.tree-toggle { cursor: pointer; }
+.tree-row.tree-toggle:hover { background: var(--hover); }
+.tree-row .icon { color: #a1a1aa; }
+.tree-label-strong { font-weight: 700; color: var(--text); flex: 1; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; }
+.tree-add { margin-left: auto; cursor: pointer; opacity: 0; }
+.tree-row:hover .tree-add { opacity: 1; }
+.tree-row .chev-toggle { width: 14px; height: 14px; }
+
+.tree-add-row { padding-left: 6px; }
+.tree-add-input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
+  flex: 1;
+  min-width: 0;
+  outline: none;
+}
+.tree-add-input:focus { border-color: #d4d4d8; }
+
+/* ---------- Classify panel ---------- */
+.classify-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 24, 27, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.classify-overlay[hidden] { display: none; }
+
+.classify-panel {
+  width: 640px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 80px);
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.classify-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+.classify-header h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.classify-close-btn {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-soft);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+.classify-close-btn:hover { background: var(--hover); color: var(--text); }
+
+.classify-body {
+  padding: 20px 24px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.classify-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.classify-section h3 { margin: 0 0 10px; font-size: 14.5px; font-weight: 700; }
+.classify-section-header h3 { margin: 0; }
+
+.classify-tree { border: 1px solid var(--border-soft); border-radius: 14px; padding: 8px; }
+.classify-tree .tree-row { padding-right: 4px; }
+
+.classify-row-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+}
+.tree-row:hover .classify-row-actions { opacity: 1; }
+
+.tree-action-btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 3px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.tree-action-btn:hover { background: var(--hover); color: var(--text); }
+.tree-action-danger { color: #ef4444; border-color: #f4d4d4; }
+.tree-action-danger:hover { background: #fef2f2; color: #ef4444; }
+
+.classify-delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: #fafafa;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin: 4px 0 6px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.classify-delete-confirm button {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 4px 9px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.classify-delete-confirm button:hover { background: var(--hover); }
+
+.classify-assign-row { display: flex; align-items: center; gap: 10px; }
+.classify-assign-row select {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
+}
+
+.uncategorized-row {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+  cursor: pointer;
+}
+.uncategorized-row .badge { margin-left: auto; }
+
+.storage-panel {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-soft);
+}
+.storage-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: #3f3f46; }
+.storage-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.storage-label { font-size: 12.5px; color: var(--text-muted); }
+
+.notes-main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.notes-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.notes-sort {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.notes-list { display: flex; flex-direction: column; }
+.notes-list.grid-view {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.notes-list.grid-view .note-row {
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.notes-list.grid-view .note-date { margin-left: 0; margin-top: 8px; }
+
+.note-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 4px;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: pointer;
+  border-radius: 10px;
+}
+.note-row:hover { background: #fafafa; }
+.note-row.hidden { display: none; }
+.notes-list:not(.grid-view) .note-row:last-child { border-bottom: none; }
+
+.note-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: #fff;
+}
+.badge-red { background: #ef4444; }
+.badge-blue { background: #3b82f6; }
+.badge-purple { background: #a855f7; }
+.badge-green { background: #22c55e; }
+.badge-yellow { background: #eab308; }
+.badge-gray { background: #71717a; }
+
+.note-info { flex: 1; min-width: 0; }
+.note-title { font-size: 14.5px; font-weight: 600; margin-bottom: 3px; }
+.note-path { font-size: 12.5px; color: var(--text-soft); margin-bottom: 3px; }
+.note-meta { font-size: 12.5px; color: var(--text-muted); }
+.note-date { font-size: 12.5px; color: var(--text-soft); text-align: right; line-height: 1.5; margin-left: auto; white-space: nowrap; }
+.note-time { color: var(--text-soft); }
+
+.notes-count { text-align: center; color: var(--text-soft); font-size: 13px; margin-top: 18px; }
+
+.note-reveal-btn { color: var(--text-soft); }
+
+/* ---------- Create Note type picker ---------- */
+.note-type-menu-wrap { position: relative; }
+.note-type-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 170px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.note-type-menu[hidden] { display: none; }
+.note-type-option {
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.note-type-option:hover { background: var(--hover); }
+
+#note-type-step-title { display: flex; gap: 6px; padding: 4px; }
+#note-type-step-title[hidden] { display: none; }
+#note-type-title-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+}
+
+/* ---------- Note editor ---------- */
+.editor-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+.editor-title-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--text);
+  font-family: inherit;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 2px;
+  border-radius: 8px;
+}
+.editor-title-input:focus { background: #fafafa; }
+#editor-delete-btn { color: #ef4444; border-color: #f4d4d4; }
+#editor-delete-btn:hover { background: #fef2f2; }
+#editor-delete-btn[hidden] { display: none; }
+
+.editor-panel { display: flex; flex-direction: column; gap: 16px; }
+.editor-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.editor-field { display: flex; align-items: center; gap: 10px; }
+.editor-field-label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+#editor-folder {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
+  cursor: pointer;
+}
+.editor-lastedit { font-size: 12.5px; color: var(--text-soft); }
+
+.editor-textarea {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 18px 20px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  font-family: inherit;
+  color: #27272a;
+  resize: vertical;
+  min-height: 420px;
+  outline: none;
+}
+.editor-textarea:focus { border-color: #d4d4d8; }
+
+.editor-pdf-frame {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  min-height: 75vh;
+  flex: 1;
+  background: #fff;
+}
+.editor-pdf-frame[hidden] { display: none; }
+
+/* ---------- PDF Editor ---------- */
+
+#view-pdf-editor {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+#view-pdf-editor.active {
+  display: flex;
+}
+
+.pdfed-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.pdfed-header .editor-title-input {
+  flex: 1;
+}
+.pdfed-status {
+  font-size: 12.5px;
+  color: #8a8a92;
+  white-space: nowrap;
+}
+
+/* ---------- Toolbar ---------- */
+.pdfed-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e3e3e8;
+  border-radius: 12px;
+  padding: 8px 10px;
+  margin-bottom: 14px;
+}
+.pdfed-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+  color: #4b4b52;
+}
+.pdfed-tool-btn:hover {
+  background: #f2f2f5;
+}
+.pdfed-tool-btn.active {
+  background: #18181b;
+  color: #ffffff;
+}
+.pdfed-tool-btn .icon {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pdfed-sep {
+  width: 1px;
+  height: 24px;
+  background: #e3e3e8;
+  margin: 0 4px;
+}
+.pdfed-spacer {
+  flex: 1;
+}
+.pdfed-prop {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #6b6b73;
+}
+.pdfed-prop input[type='number'] {
+  width: 52px;
+  height: 30px;
+  border: 1px solid #dcdce2;
+  border-radius: 8px;
+  padding: 0 6px;
+  font-size: 13px;
+  background: #fbfbfc;
+}
+.pdfed-prop input[type='color'] {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #dcdce2;
+  border-radius: 8px;
+  padding: 2px;
+  background: #fbfbfc;
+  cursor: pointer;
+}
+#pdfed-zoom-label {
+  min-width: 44px;
+  text-align: center;
+  font-size: 12.5px;
+  color: #6b6b73;
+}
+/* ---------- Context menu ---------- */
+.pdfed-ctx-menu {
+  position: fixed;
+  z-index: 200;
+  background: #ffffff;
+  border: 1px solid #e3e3e8;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(20, 20, 25, 0.16);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  min-width: 170px;
+}
+.pdfed-ctx-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #2b2b30;
+  cursor: pointer;
+}
+.pdfed-ctx-item:hover:not(:disabled) {
+  background: #f2f2f5;
+}
+.pdfed-ctx-item:disabled {
+  color: #b9b9c0;
+  cursor: not-allowed;
+}
+.pdfed-ctx-item.danger {
+  color: #d34848;
+}
+.pdfed-ctx-item.danger:hover:not(:disabled) {
+  background: #fdeceb;
+}
+.pdfed-ctx-sep {
+  height: 1px;
+  background: #e3e3e8;
+  margin: 4px 2px;
+}
+
+/* ---------- Canvas area ---------- */
+.pdfed-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #e4e4e7;
+  border: 1px solid #dcdce2;
+  border-radius: 12px;
+  padding: 28px 0;
+}
+.pdfed-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+}
+
+.pdfed-page {
+  position: relative;
+  background: #ffffff;
+  box-shadow: 0 3px 14px rgba(20, 20, 25, 0.16);
+  border-radius: 2px;
+  flex-shrink: 0;
+  user-select: none;
+}
+.pdfed-el.editing .pdfed-text {
+  user-select: text;
+}
+.pdfed-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.pdfed-el-layer {
+  position: absolute;
+  inset: 0;
+}
+.pdfed-draw-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* While a creation tool is armed, clicks land on the page, not elements. */
+.pdfed-pages.creating .pdfed-el {
+  pointer-events: none;
+}
+.pdfed-pages.creating .pdfed-page {
+  cursor: crosshair;
+}
+.pdfed-pages.inking .pdfed-page {
+  cursor: cell;
+}
+
+/* ---------- Page badge ---------- */
+.pdfed-page-badge {
+  position: absolute;
+  top: -22px;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #6b6b73;
+}
+.pdfed-page-del {
+  border: none;
+  background: transparent;
+  color: #9a9aa2;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 2px;
+}
+.pdfed-page-del:hover {
+  color: #d34848;
+}
+
+/* ---------- Elements ---------- */
+.pdfed-el {
+  position: absolute;
+  box-sizing: border-box;
+  cursor: move;
+}
+.pdfed-el > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.pdfed-el > img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+  -webkit-user-drag: none;
+}
+.pdfed-el.selected {
+  outline: 1.5px solid #4a7dff;
+  outline-offset: 1px;
+}
+.pdfed-el-layout {
+  cursor: default;
+}
+.pdfed-el-layout.selected {
+  outline-style: dashed;
+}
+
+.pdfed-text {
+  width: 100%;
+  min-height: 100%;
+  font-family: Helvetica, Arial, sans-serif;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  word-break: break-word;
+  outline: none;
+  padding: 1px 2px;
+  cursor: inherit;
+}
+.pdfed-el.editing {
+  cursor: text;
+}
+.pdfed-el.editing .pdfed-text {
+  background: rgba(74, 125, 255, 0.06);
+}
+.pdfed-el-text:not(.editing) .pdfed-text:empty::before {
+  content: 'Text';
+  color: #b9b9c0;
+}
+
+/* ---------- Handles ---------- */
+.pdfed-handle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: #ffffff;
+  border: 1.5px solid #4a7dff;
+  border-radius: 2px;
+  z-index: 5;
+}
+.pdfed-handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
+.pdfed-handle-n  { top: -5px; left: calc(50% - 4.5px); cursor: ns-resize; }
+.pdfed-handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
+.pdfed-handle-e  { top: calc(50% - 4.5px); right: -5px; cursor: ew-resize; }
+.pdfed-handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+.pdfed-handle-s  { bottom: -5px; left: calc(50% - 4.5px); cursor: ns-resize; }
+.pdfed-handle-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.pdfed-handle-w  { top: calc(50% - 4.5px); left: -5px; cursor: ew-resize; }
+
+.pdfed-handle-point {
+  border-radius: 50%;
+  width: 11px;
+  height: 11px;
+  cursor: grab;
+}
+</style>
+</head>
+<body>
+<!-- Icon sprite sheet -->
+<svg style="display:none">
+  <symbol id="icon-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></symbol>
+  <symbol id="icon-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></symbol>
+  <symbol id="icon-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="icon-file-text" viewBox="0 0 24 24"><path d="M6 2h8l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"/><path d="M14 2v5h5"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M8 9h3"/></symbol>
+  <symbol id="icon-inbox" viewBox="0 0 24 24"><path d="M3 12h4l2 3h6l2-3h4"/><path d="M5.5 5h13L21 12v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6Z"/></symbol>
+  <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="2.2 3.2"/></symbol>
+  <symbol id="icon-help-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 1 1 3.8 2.6c-.8.3-1 .9-1 1.6"/><path d="M12 17h.01"/></symbol>
+  <symbol id="icon-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="icon-chevron-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="icon-chevron-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+  <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0v5l2 3H4l2-3Z"/><path d="M10 19a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+  <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="icon-coffee" viewBox="0 0 24 24"><path d="M4 8h12v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4Z"/><path d="M16 9h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M7 2c-.5 1 .5 1.5 0 3"/><path d="M11 2c-.5 1 .5 1.5 0 3"/></symbol>
+  <symbol id="icon-leaf" viewBox="0 0 24 24"><path d="M5 20C5 10 12 4 20 4c0 8-6 14-15 14Z"/><path d="M5 20c2-4 5-7 9-9"/></symbol>
+  <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5Z"/></symbol>
+  <symbol id="icon-sliders" viewBox="0 0 24 24"><path d="M4 6h8"/><path d="M16 6h4"/><circle cx="13" cy="6" r="2"/><path d="M4 12h4"/><circle cx="11" cy="12" r="2"/><path d="M13 12h7"/><path d="M4 18h11"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m6.5 9.5 5.5-5.5 5.5 5.5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+  <symbol id="icon-more-vertical" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></symbol>
+  <symbol id="icon-filter" viewBox="0 0 24 24"><path d="M4 5h16l-6 8v6l-4-2v-4Z"/></symbol>
+  <symbol id="icon-arrow-up-down" viewBox="0 0 24 24"><path d="M8 3v14"/><path d="m4 7 4-4 4 4"/><path d="M16 21V7"/><path d="m12 17 4 4 4-4"/></symbol>
+  <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="icon-list" viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></symbol>
+  <symbol id="icon-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></symbol>
+  <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></symbol>
+  <symbol id="icon-cursor" viewBox="0 0 24 24"><path d="M5 3l14 8.5-6.8 1.2L8.6 19Z"/></symbol>
+  <symbol id="icon-type" viewBox="0 0 24 24"><path d="M5 7V4h14v3"/><path d="M12 4v16"/><path d="M9 20h6"/></symbol>
+  <symbol id="icon-photo" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m3 17 5-4 4 3 4-4 5 5"/></symbol>
+  <symbol id="icon-square" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></symbol>
+  <symbol id="icon-circle-shape" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></symbol>
+  <symbol id="icon-diagonal" viewBox="0 0 24 24"><path d="M5 19 19 5"/></symbol>
+  <symbol id="icon-pen" viewBox="0 0 24 24"><path d="m4 20 1-4L16 5l3 3L8 19l-4 1Z"/><path d="m14 7 3 3"/></symbol>
+  <symbol id="icon-highlighter" viewBox="0 0 24 24"><path d="m9 11 6-6 4 4-6 6-4.5.5Z"/><path d="m7 13 4 4"/><path d="M4 20h8"/></symbol>
+  <symbol id="icon-layout" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M10 10v10"/></symbol>
+  <symbol id="icon-zoom-in" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/><path d="M11 8v6"/></symbol>
+  <symbol id="icon-zoom-out" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/></symbol>
+  <symbol id="icon-undo" viewBox="0 0 24 24"><path d="M8 5 3 10l5 5"/><path d="M3 10h10.5a5.5 5.5 0 0 1 0 11H10"/></symbol>
+  <symbol id="icon-redo" viewBox="0 0 24 24"><path d="m16 5 5 5-5 5"/><path d="M21 10H10.5a5.5 5.5 0 0 0 0 11H14"/></symbol>
+</svg>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32">
+        <rect x="1" y="1" width="30" height="30" rx="9" fill="#18181b"/>
+        <path d="M9 23c8-1.5 12.5-6.5 15-15-9 1-14.5 6.5-15 15Z" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M9 23c2.2-2.4 4.6-3.8 7-4.6" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span class="logo-text">Dexlie</span>
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Collapse sidebar">
+        <svg class="icon"><use href="#icon-arrow-left"/></svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-view="dashboard"><svg class="icon"><use href="#icon-home"/></svg><span>Dashboard</span></div>
+      <div class="nav-item" data-view="tasks"><svg class="icon"><use href="#icon-check-circle"/></svg><span>Tasks</span></div>
+      <div class="nav-item" data-view="pomodoro"><svg class="icon"><use href="#icon-clock"/></svg><span>Pomodoro</span></div>
+      <div class="nav-item" data-view="calendar"><svg class="icon"><use href="#icon-calendar"/></svg><span>Calendar</span></div>
+      <div class="nav-item" data-view="projects"><svg class="icon"><use href="#icon-folder"/></svg><span>Projects</span></div>
+      <div class="nav-item" data-view="notes"><svg class="icon"><use href="#icon-file-text"/></svg><span>Notes</span></div>
+      <div class="nav-item" data-view="inbox"><svg class="icon"><use href="#icon-inbox"/></svg><span>Inbox</span></div>
+    </nav>
+
+    <div class="sidebar-spacer"></div>
+
+    <nav class="sidebar-nav sidebar-nav-secondary">
+      <div class="nav-item" data-view="settings"><svg class="icon"><use href="#icon-settings"/></svg><span>Settings</span></div>
+      <div class="nav-item" data-view="help"><svg class="icon"><use href="#icon-help-circle"/></svg><span>Help</span></div>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="avatar">JD</div>
+      <span class="user-name">John Doe</span>
+      <svg class="icon chev"><use href="#icon-chevron-down"/></svg>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <section class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div>
+          <h1>Good morning, John</h1>
+          <p>Here's what's happening today.</p>
+        </div>
+        <button class="btn-icon"><svg class="icon"><use href="#icon-bell"/></svg><span class="dot-badge"></span></button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="#icon-check-circle"/></svg></div>
+          <div>
+            <div class="stat-title">Tasks Today</div>
+            <div class="stat-value">8</div>
+            <div class="stat-label">3 completed</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="#icon-calendar"/></svg></div>
+          <div>
+            <div class="stat-title">Upcoming Events</div>
+            <div class="stat-value">2</div>
+            <div class="stat-label">Next: Team stand-up</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="#icon-folder"/></svg></div>
+          <div>
+            <div class="stat-title">Active Projects</div>
+            <div class="stat-value">5</div>
+            <div class="stat-label">2 updates</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Today's Schedule</h2>
+          <button class="btn" data-view-link="calendar"><svg class="icon"><use href="#icon-calendar"/></svg>View Calendar</button>
+        </div>
+        <div class="schedule-list">
+          <div class="schedule-item"><span class="schedule-time">10:00 AM</span><span class="schedule-dot"></span><span class="schedule-title">Team Stand-up</span></div>
+          <div class="schedule-item"><span class="schedule-time">11:30 AM</span><span class="schedule-dot"></span><span class="schedule-title">Project Review</span></div>
+          <div class="schedule-item"><span class="schedule-time">02:00 PM</span><span class="schedule-dot"></span><span class="schedule-title">Design Feedback</span></div>
+          <div class="schedule-item"><span class="schedule-time">04:00 PM</span><span class="schedule-dot"></span><span class="schedule-title">Client Call</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>My Tasks</h2>
+          <div class="panel-header-actions">
+            <span class="badge">3 pending</span>
+            <button class="icon-btn"><svg class="icon"><use href="#icon-more-vertical"/></svg></button>
+          </div>
+        </div>
+        <div class="task-list">
+          <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Finalize landing page design</span><button class="icon-btn"><svg class="icon"><use href="#icon-more-vertical"/></svg></button></div>
+          <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Prepare presentation for client</span><button class="icon-btn"><svg class="icon"><use href="#icon-more-vertical"/></svg></button></div>
+          <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Update project documentation</span><button class="icon-btn"><svg class="icon"><use href="#icon-more-vertical"/></svg></button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TASKS ===================== -->
+    <section class="view" id="view-tasks">
+      <div class="page-header">
+        <h1>Tasks</h1>
+        <button class="btn btn-primary"><svg class="icon"><use href="#icon-plus"/></svg>New Task<svg class="icon"><use href="#icon-chevron-down"/></svg></button>
+      </div>
+
+      <div class="day-tabs">
+        <span class="day-tab">Sunday</span>
+        <span class="day-tab active">Monday</span>
+        <span class="day-tab">Tuesday</span>
+        <span class="day-tab">Wednesday</span>
+        <span class="day-tab">Thursday</span>
+        <span class="day-tab">Friday</span>
+        <span class="day-tab">Saturday</span>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title-sm">Add a task</h2>
+        <div class="addtask-grid">
+          <div class="addtask-card">
+            <div class="addtask-icon"><svg class="icon"><use href="#icon-plus"/></svg></div>
+            <div>
+              <div class="addtask-title">Add Task Individually</div>
+              <div class="addtask-sub">Create a single task for the day.</div>
+            </div>
+            <svg class="icon chev-right"><use href="#icon-chevron-right"/></svg>
+          </div>
+          <div class="addtask-card">
+            <div class="addtask-icon"><svg class="icon"><use href="#icon-folder"/></svg></div>
+            <div>
+              <div class="addtask-title">Create Assignment</div>
+              <div class="addtask-sub">Create a group (assignment) and add multiple tasks.</div>
+            </div>
+            <svg class="icon chev-right"><use href="#icon-chevron-right"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Today's Tasks</h2>
+          <div class="panel-header-actions">
+            <button class="btn btn-sm"><svg class="icon"><use href="#icon-filter"/></svg>Filter</button>
+            <button class="btn btn-sm"><svg class="icon"><use href="#icon-arrow-up-down"/></svg>Sort</button>
+          </div>
+        </div>
+
+        <div class="section-toggle"><span>Individual Tasks</span><svg class="icon"><use href="#icon-chevron-up"/></svg></div>
+        <div class="task-list">
+          <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Review design mockups</span><span class="task-meta"><span class="meta-dot"></span>10:00 AM</span><button class="icon-btn"><svg class="icon"><use href="#icon-more-vertical"/></svg></button></div>
+          <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Email client updates</span><span class="task-meta"><span class="meta-dot"></span>02:00 PM</span><button class="icon-btn"><svg class="icon"><use href="#icon-more-vertical"/></svg></button></div>
+        </div>
+
+        <div class="section-toggle" style="margin-top:22px;"><span>Assignments</span><svg class="icon"><use href="#icon-chevron-up"/></svg></div>
+        <div class="assignment">
+          <div class="assignment-header">
+            <div class="assignment-icon"><svg class="icon"><use href="#icon-folder"/></svg></div>
+            <div class="assignment-name">Website Redesign</div>
+            <span class="assignment-count">3 tasks</span>
+            <div class="assignment-progress">
+              <span class="progress-frac">1 / 3</span>
+              <span class="progress-bar"><span class="progress-fill" style="width:33%"></span></span>
+            </div>
+            <button class="icon-btn"><svg class="icon"><use href="#icon-more-vertical"/></svg></button>
+          </div>
+          <div class="assignment-subtasks">
+            <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Research and inspiration</span></div>
+            <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Create wireframes</span></div>
+            <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Prepare presentation</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-toggle"><span>Completed</span><svg class="icon"><use href="#icon-chevron-down"/></svg></div>
+        <div class="task-list collapsed" id="completed-list">
+          <div class="task-row completed"><span class="checkbox checked"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Fix login issues</span><span class="task-meta">Individual Task</span><span class="task-meta">9:30 AM</span></div>
+          <div class="task-row completed"><span class="checkbox checked"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Content Outline</span><span class="task-meta">(Content Plan)</span><span class="task-meta">Yesterday</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== POMODORO ===================== -->
+    <section class="view" id="view-pomodoro">
+      <div class="page-header">
+        <div>
+          <h1>Pomodoro</h1>
+          <p>Stay focused. Get things done.</p>
+        </div>
+        <div class="panel-header-actions">
+          <button class="btn btn-primary"><svg class="icon"><use href="#icon-plus"/></svg>Create Task</button>
+          <button class="icon-btn bordered"><svg class="icon"><use href="#icon-more-vertical"/></svg></button>
+        </div>
+      </div>
+
+      <div class="pomodoro-layout">
+        <div class="panel timer-panel">
+          <div class="mode-tabs">
+            <div class="mode-tab active" data-mode="focus"><svg class="icon"><use href="#icon-clock"/></svg>Timer</div>
+            <div class="mode-tab" data-mode="short"><svg class="icon"><use href="#icon-coffee"/></svg>Short Break</div>
+            <div class="mode-tab" data-mode="long"><svg class="icon"><use href="#icon-leaf"/></svg>Long Break</div>
+          </div>
+
+          <div class="timer-wrap">
+            <svg class="timer-ring" viewBox="0 0 220 220">
+              <circle class="ring-bg" cx="110" cy="110" r="98"/>
+              <circle class="ring-progress" id="ring-progress" cx="110" cy="110" r="98"/>
+            </svg>
+            <div class="timer-face">
+              <div class="timer-label"><span id="timer-label-text">Focus Time</span><svg class="icon icon-sm"><use href="#icon-sliders"/></svg></div>
+              <div class="timer-display" id="timer-display">25:00</div>
+              <button class="timer-start-btn" id="timer-start-btn"><svg class="icon"><use href="#icon-play"/></svg><span id="timer-start-label">Start</span></button>
+            </div>
+          </div>
+
+          <button class="btn edit-timer-btn"><svg class="icon"><use href="#icon-sliders"/></svg>Edit Timer</button>
+
+          <div class="panel inner-panel">
+            <h2 class="panel-title-sm">Today's Progress</h2>
+            <div class="progress-stats">
+              <div class="progress-stat"><div class="progress-stat-icon"><svg class="icon"><use href="#icon-clock"/></svg></div><div><div class="progress-stat-value" id="stat-pomodoros">2</div><div class="progress-stat-label">Pomodoros</div></div></div>
+              <div class="progress-stat"><div class="progress-stat-icon"><svg class="icon"><use href="#icon-check-circle"/></svg></div><div><div class="progress-stat-value" id="stat-focustime">50m</div><div class="progress-stat-label">Focus Time</div></div></div>
+              <div class="progress-stat"><div class="progress-stat-icon"><svg class="icon"><use href="#icon-check-circle"/></svg></div><div><div class="progress-stat-value">1</div><div class="progress-stat-label">Tasks Completed</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="tabs-underline">
+            <span class="tab-underline-item active" data-tab="tasks">Tasks</span>
+            <span class="tab-underline-item" data-tab="assignments">Assignments</span>
+          </div>
+
+          <div class="panel-header" style="margin-top:18px;">
+            <h2 class="panel-title-sm">Individual Tasks</h2>
+            <button class="btn btn-sm"><svg class="icon"><use href="#icon-plus"/></svg>Add Task</button>
+          </div>
+          <div class="task-list">
+            <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Review design mockups</span><span class="task-meta">10:00 AM</span><button class="icon-btn round" data-task-name="Review design mockups"><svg class="icon"><use href="#icon-play"/></svg></button></div>
+            <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Email client updates</span><span class="task-meta">02:00 PM</span><button class="icon-btn round" data-task-name="Email client updates"><svg class="icon"><use href="#icon-play"/></svg></button></div>
+            <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Prepare presentation</span><span class="task-meta">&ndash;</span><button class="icon-btn round" data-task-name="Prepare presentation"><svg class="icon"><use href="#icon-play"/></svg></button></div>
+          </div>
+
+          <h2 class="panel-title-sm" style="margin-top:22px;">Assignments</h2>
+          <div class="assignment">
+            <div class="assignment-header">
+              <div class="assignment-icon"><svg class="icon"><use href="#icon-folder"/></svg></div>
+              <div class="assignment-name">Website Redesign</div>
+              <span class="assignment-count">3 tasks</span>
+              <svg class="icon chev-toggle"><use href="#icon-chevron-up"/></svg>
+            </div>
+            <div class="assignment-subtasks">
+              <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Research and inspiration</span><span class="task-meta">25m</span><button class="icon-btn round" data-task-name="Research and inspiration"><svg class="icon"><use href="#icon-play"/></svg></button></div>
+              <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Create wireframes</span><span class="task-meta">25m</span><button class="icon-btn round" data-task-name="Create wireframes"><svg class="icon"><use href="#icon-play"/></svg></button></div>
+              <div class="task-row"><span class="checkbox"><svg class="icon"><use href="#icon-check"/></svg></span><span class="task-title">Prepare presentation</span><span class="task-meta">25m</span><button class="icon-btn round" data-task-name="Prepare presentation"><svg class="icon"><use href="#icon-play"/></svg></button></div>
+            </div>
+          </div>
+          <div class="assignment collapsed">
+            <div class="assignment-header">
+              <div class="assignment-icon"><svg class="icon"><use href="#icon-folder"/></svg></div>
+              <div class="assignment-name">Marketing Plan</div>
+              <span class="assignment-count">4 tasks</span>
+              <svg class="icon chev-toggle"><use href="#icon-chevron-right"/></svg>
+            </div>
+            <div class="assignment-subtasks"></div>
+          </div>
+          <div class="assignment collapsed">
+            <div class="assignment-header">
+              <div class="assignment-icon"><svg class="icon"><use href="#icon-folder"/></svg></div>
+              <div class="assignment-name">Content Strategy</div>
+              <span class="assignment-count">2 tasks</span>
+              <svg class="icon chev-toggle"><use href="#icon-chevron-right"/></svg>
+            </div>
+            <div class="assignment-subtasks"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Session History</h2>
+          <button class="btn btn-sm">View All<svg class="icon"><use href="#icon-chevron-right"/></svg></button>
+        </div>
+        <div class="session-history">
+          <div class="session-card"><svg class="icon"><use href="#icon-check-circle"/></svg><div><div class="session-time">25:00</div><div class="session-type">Focus Time</div></div><span class="session-clock">9:00 AM</span></div>
+          <div class="session-card"><svg class="icon"><use href="#icon-coffee"/></svg><div><div class="session-time">5:00</div><div class="session-type">Short Break</div></div><span class="session-clock">9:25 AM</span></div>
+          <div class="session-card"><svg class="icon"><use href="#icon-check-circle"/></svg><div><div class="session-time">25:00</div><div class="session-type">Focus Time</div></div><span class="session-clock">9:30 AM</span></div>
+          <div class="session-card"><svg class="icon"><use href="#icon-coffee"/></svg><div><div class="session-time">5:00</div><div class="session-type">Short Break</div></div><span class="session-clock">9:55 AM</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== NOTES ===================== -->
+    <section class="view" id="view-notes">
+      <div class="page-header">
+        <div>
+          <h1>Notes</h1>
+          <p>Organize your notes, chapters and subjects.</p>
+        </div>
+        <div class="panel-header-actions">
+          <button class="btn" id="import-notes-btn"><svg class="icon"><use href="#icon-upload"/></svg>Import Notes</button>
+          <div class="note-type-menu-wrap">
+            <button class="btn btn-primary" id="create-note-btn"><svg class="icon"><use href="#icon-plus"/></svg>Create Note</button>
+            <div class="note-type-menu" id="note-type-menu" hidden>
+              <div id="note-type-step-pick">
+                <!-- Populated in notes.js: "Blank" + every preset in LAYOUTS -->
+              </div>
+              <div id="note-type-step-title" hidden>
+                <input type="text" id="note-type-title-input" placeholder="Note title" />
+                <button class="btn btn-primary btn-sm" id="note-type-confirm-btn">Create</button>
+              </div>
+            </div>
+          </div>
+          <div class="note-type-menu-wrap">
+            <button class="icon-btn bordered" id="notes-more-btn"><svg class="icon"><use href="#icon-more-vertical"/></svg></button>
+            <div class="note-type-menu" id="notes-more-menu" hidden>
+              <button class="note-type-option" id="classify-open-btn">Classify</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes-layout">
+        <div class="notes-sidebar">
+          <div class="search-box">
+            <svg class="icon"><use href="#icon-search"/></svg>
+            <input type="text" id="notes-search" placeholder="Search notes" />
+          </div>
+
+          <ul class="tree">
+            <li class="tree-root open">
+              <div class="tree-row tree-toggle"><svg class="icon chev-toggle"><use href="#icon-chevron-down"/></svg><span class="tree-label-strong">Subjects</span></div>
+              <ul id="folder-tree-root"><!-- read-only display, populated by notes.js from the folders table --></ul>
+            </li>
+          </ul>
+
+          <div class="tree-row uncategorized-row"><svg class="icon"><use href="#icon-file-text"/></svg><span>Uncategorized</span><span class="badge" id="uncategorized-count">0</span></div>
+
+          <div class="storage-panel">
+            <div class="storage-title">Storage</div>
+            <span class="progress-bar wide"><span class="progress-fill" style="width:24%"></span></span>
+            <div class="storage-row">
+              <span class="storage-label">2.4 GB of 10 GB used</span>
+              <button class="btn btn-sm">Upgrade</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="notes-main">
+          <div class="notes-main-header">
+            <div class="notes-dropdown">All Notes <svg class="icon"><use href="#icon-chevron-down"/></svg></div>
+            <div class="panel-header-actions">
+              <span class="notes-sort">Sort: Newest <svg class="icon"><use href="#icon-chevron-down"/></svg></span>
+              <button class="icon-btn bordered active" data-notes-view="list"><svg class="icon"><use href="#icon-list"/></svg></button>
+              <button class="icon-btn bordered" data-notes-view="grid"><svg class="icon"><use href="#icon-grid"/></svg></button>
+            </div>
+          </div>
+
+          <div class="notes-list" id="notes-list"></div>
+          <div class="notes-count" id="notes-count"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== NOTE EDITOR ===================== -->
+    <section class="view" id="view-note-editor">
+      <div class="page-header">
+        <div class="editor-title-row">
+          <button class="icon-btn bordered" id="editor-back-btn"><svg class="icon"><use href="#icon-arrow-left"/></svg></button>
+          <input type="text" id="editor-title" class="editor-title-input" placeholder="Untitled note" />
+        </div>
+        <div class="panel-header-actions">
+          <button class="btn" id="editor-delete-btn"><svg class="icon"><use href="#icon-trash"/></svg>Delete</button>
+          <button class="btn btn-primary" id="editor-save-btn"><svg class="icon"><use href="#icon-check"/></svg>Save</button>
+        </div>
+      </div>
+
+      <div class="panel editor-panel">
+        <div class="editor-meta-row">
+          <label class="editor-field">
+            <span class="editor-field-label">Folder</span>
+            <select id="editor-folder">
+              <option value="">Uncategorized</option>
+              <!-- remaining options populated by notes.js from the folders table -->
+            </select>
+          </label>
+          <span class="editor-lastedit" id="editor-lastedit"></span>
+        </div>
+        <textarea id="editor-content" class="editor-textarea" placeholder="Start writing..."></textarea>
+      </div>
+    </section>
+
+    <!-- ===================== PDF EDITOR ===================== -->
+    <section class="view" id="view-pdf-editor">
+      <div class="pdfed-header">
+        <button class="icon-btn bordered" id="pdfed-back-btn" title="Back to notes"><svg class="icon"><use href="#icon-arrow-left"/></svg></button>
+        <input type="text" id="pdfed-title" class="editor-title-input" placeholder="Untitled note" />
+        <span class="pdfed-status" id="pdfed-status"></span>
+        <button class="btn btn-primary" id="pdfed-save-btn"><svg class="icon"><use href="#icon-check"/></svg>Save</button>
+      </div>
+
+      <div class="pdfed-toolbar">
+        <button class="pdfed-tool-btn active" data-tool="select" title="Select / move"><svg class="icon"><use href="#icon-cursor"/></svg></button>
+        <button class="pdfed-tool-btn" data-tool="text" title="Text box"><svg class="icon"><use href="#icon-type"/></svg></button>
+        <button class="pdfed-tool-btn" id="pdfed-image-btn" title="Insert image"><svg class="icon"><use href="#icon-photo"/></svg></button>
+        <button class="pdfed-tool-btn" data-tool="rect" title="Rectangle"><svg class="icon"><use href="#icon-square"/></svg></button>
+        <button class="pdfed-tool-btn" data-tool="ellipse" title="Ellipse"><svg class="icon"><use href="#icon-circle-shape"/></svg></button>
+        <button class="pdfed-tool-btn" data-tool="line" title="Line"><svg class="icon"><use href="#icon-diagonal"/></svg></button>
+        <button class="pdfed-tool-btn" data-tool="pen" title="Pen"><svg class="icon"><use href="#icon-pen"/></svg></button>
+        <button class="pdfed-tool-btn" data-tool="highlighter" title="Highlighter"><svg class="icon"><use href="#icon-highlighter"/></svg></button>
+
+        <span class="pdfed-sep"></span>
+
+        <label class="pdfed-prop" title="Font size">A <input type="number" id="pdfed-fontsize" min="6" max="200" value="14" /></label>
+        <button class="pdfed-tool-btn" id="pdfed-bold" title="Bold"><strong>B</strong></button>
+        <button class="pdfed-tool-btn" id="pdfed-italic" title="Italic"><em>I</em></button>
+        <label class="pdfed-prop" title="Text / stroke color">Color <input type="color" id="pdfed-color" value="#1f1f24" /></label>
+        <label class="pdfed-prop" title="Fill color">Fill <input type="color" id="pdfed-fill" value="#ffd166" /></label>
+        <button class="pdfed-tool-btn" id="pdfed-nofill" title="No fill" style="font-size:11px;">&empty;</button>
+        <label class="pdfed-prop" title="Stroke width">W <input type="number" id="pdfed-strokew" min="0.5" max="40" step="0.5" value="2" /></label>
+
+        <span class="pdfed-spacer"></span>
+
+        <button class="pdfed-tool-btn" id="pdfed-undo" title="Undo (Ctrl+Z)"><svg class="icon"><use href="#icon-undo"/></svg></button>
+        <button class="pdfed-tool-btn" id="pdfed-redo" title="Redo (Ctrl+Y)"><svg class="icon"><use href="#icon-redo"/></svg></button>
+        <span class="pdfed-sep"></span>
+        <button class="pdfed-tool-btn" id="pdfed-zoom-out" title="Zoom out"><svg class="icon"><use href="#icon-zoom-out"/></svg></button>
+        <span id="pdfed-zoom-label">100%</span>
+        <button class="pdfed-tool-btn" id="pdfed-zoom-in" title="Zoom in"><svg class="icon"><use href="#icon-zoom-in"/></svg></button>
+        <span class="pdfed-sep"></span>
+        <button class="btn btn-sm" id="pdfed-add-page"><svg class="icon"><use href="#icon-plus"/></svg>Page</button>
+      </div>
+
+      <div class="pdfed-scroll" id="pdfed-scroll">
+        <div class="pdfed-pages" id="pdfed-pages"></div>
+      </div>
+    </section>
+
+    <!-- ===================== STUB VIEWS ===================== -->
+    <section class="view" id="view-calendar">
+      <div class="page-header"><div><h1>Calendar</h1><p>See your schedule at a glance.</p></div></div>
+      <div class="panel empty-state"><svg class="icon icon-xl"><use href="#icon-calendar"/></svg><p>Your calendar is empty for now.</p></div>
+    </section>
+
+    <section class="view" id="view-projects">
+      <div class="page-header"><div><h1>Projects</h1><p>Track everything you're building.</p></div></div>
+      <div class="panel empty-state"><svg class="icon icon-xl"><use href="#icon-folder"/></svg><p>No projects yet. Create one to get started.</p></div>
+    </section>
+
+    <section class="view" id="view-inbox">
+      <div class="page-header"><div><h1>Inbox</h1><p>Notifications and updates in one place.</p></div></div>
+      <div class="panel empty-state"><svg class="icon icon-xl"><use href="#icon-inbox"/></svg><p>You're all caught up.</p></div>
+    </section>
+
+    <section class="view" id="view-settings">
+      <div class="page-header"><div><h1>Settings</h1><p>Manage your account and preferences.</p></div></div>
+      <div class="panel empty-state"><svg class="icon icon-xl"><use href="#icon-settings"/></svg><p>Settings coming soon.</p></div>
+    </section>
+
+    <section class="view" id="view-help">
+      <div class="page-header"><div><h1>Help</h1><p>Guides and support for Dexlie.</p></div></div>
+      <div class="panel empty-state"><svg class="icon icon-xl"><use href="#icon-help-circle"/></svg><p>Need a hand? Reach out any time.</p></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================== CLASSIFY PANEL ===================== -->
+<div class="classify-overlay" id="classify-overlay" hidden>
+  <div class="classify-panel">
+    <div class="classify-header">
+      <h2>Classify Notes</h2>
+      <button class="classify-close-btn" id="classify-close-btn" title="Close">&times;</button>
+    </div>
+
+    <div class="classify-body">
+      <div class="classify-section">
+        <div class="classify-section-header">
+          <h3>Subjects, Chapters &amp; Topics</h3>
+          <button class="btn btn-sm" id="classify-add-subject-btn"><svg class="icon"><use href="#icon-plus"/></svg>Add Subject</button>
+        </div>
+        <ul class="tree classify-tree" id="classify-tree-root"><!-- populated by notes.js --></ul>
+      </div>
+
+      <div class="classify-section">
+        <h3>Add a note to a folder</h3>
+        <div class="classify-assign-row">
+          <select id="classify-note-select"></select>
+          <select id="classify-folder-select"></select>
+          <button class="btn btn-primary btn-sm" id="classify-assign-btn">Assign</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// ---------- View router ----------
+// Central place for switching between top-level views ("pages").
+let showView;
+{
+  const views = document.querySelectorAll('.view');
+  const navItems = document.querySelectorAll('.nav-item[data-view]');
+
+  showView = function (name) {
+    views.forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
+    navItems.forEach((n) => n.classList.toggle('active', n.dataset.view === name));
+  };
+
+  // Generic "jump to this view" links/buttons that can appear on any page
+  // (e.g. the "View Calendar" button on the Dashboard).
+  document.querySelectorAll('[data-view-link]').forEach((el) => {
+    el.addEventListener('click', () => showView(el.dataset.viewLink));
+  });
+}
+
+// ---------- Preset page layouts (shared renderer + export) ----------
+// Same primitives drawn by the on-screen editor (SVG) and the PDF export
+// (pdf-lib). Coordinates are PDF points from the TOP-LEFT of the page.
+const LAYOUTS = [
+  { id: 'cornell', name: 'Cornell Notes' },
+  { id: 'flashcards', name: 'Flashcards (8 cards)' },
+  { id: 'lined', name: 'Lined Paper' },
+  { id: 'grid', name: 'Grid Paper' },
+  { id: 'checklist', name: 'Checklist' },
+];
+
+function layoutPrimitives(variant, w, h) {
+  const prims = [];
+
+  if (variant === 'cornell') {
+    const m = 40;
+    const headerY = 84;
+    const summaryY = h - 140;
+    const cueX = 180;
+    prims.push({ k: 'text', x: m + 4, y: 46, t: 'Topic:', size: 11, c: '#9a9aa2' });
+    prims.push({ k: 'line', x1: m + 44, y1: 60, x2: w - m, y2: 60, c: '#c8c8ce', wd: 1 });
+    prims.push({ k: 'line', x1: m, y1: headerY, x2: w - m, y2: headerY, c: '#b9b9c0', wd: 1.2 });
+    prims.push({ k: 'line', x1: cueX, y1: headerY, x2: cueX, y2: summaryY, c: '#b9b9c0', wd: 1.2 });
+    prims.push({ k: 'line', x1: m, y1: summaryY, x2: w - m, y2: summaryY, c: '#b9b9c0', wd: 1.2 });
+    prims.push({ k: 'text', x: m + 6, y: headerY + 8, t: 'Cues', size: 10, c: '#9a9aa2' });
+    prims.push({ k: 'text', x: cueX + 8, y: headerY + 8, t: 'Notes', size: 10, c: '#9a9aa2' });
+    prims.push({ k: 'text', x: m + 6, y: summaryY + 8, t: 'Summary', size: 10, c: '#9a9aa2' });
+  }
+
+  if (variant === 'flashcards') {
+    const m = 36;
+    const gap = 14;
+    const cols = 2;
+    const rows = 4;
+    const cardW = (w - 2 * m - gap * (cols - 1)) / cols;
+    const cardH = (h - 2 * m - gap * (rows - 1)) / rows;
+    for (let r = 0; r < rows; r += 1) {
+      for (let c = 0; c < cols; c += 1) {
+        const x = m + c * (cardW + gap);
+        const y = m + r * (cardH + gap);
+        prims.push({ k: 'rect', x, y, w: cardW, h: cardH, fill: '#ffffff', stroke: '#b9b9c0', wd: 1 });
+        prims.push({ k: 'line', x1: x + 10, y1: y + 26, x2: x + cardW - 10, y2: y + 26, c: '#e3e3e8', wd: 1 });
+      }
+    }
+  }
+
+  if (variant === 'lined') {
+    const left = 44;
+    const right = w - 36;
+    for (let y = 96; y < h - 44; y += 26) {
+      prims.push({ k: 'line', x1: left, y1: y, x2: right, y2: y, c: '#c9d8ea', wd: 1 });
+    }
+    prims.push({ k: 'line', x1: 90, y1: 40, x2: 90, y2: h - 40, c: '#e8b4b4', wd: 1 });
+  }
+
+  if (variant === 'grid') {
+    const m = 36;
+    const step = 20;
+    for (let x = m; x <= w - m; x += step) {
+      prims.push({ k: 'line', x1: x, y1: m, x2: x, y2: h - m, c: '#e3e3e8', wd: 0.6 });
+    }
+    for (let y = m; y <= h - m; y += step) {
+      prims.push({ k: 'line', x1: m, y1: y, x2: w - m, y2: y, c: '#e3e3e8', wd: 0.6 });
+    }
+  }
+
+  if (variant === 'checklist') {
+    prims.push({ k: 'text', x: 48, y: 46, t: 'Checklist', size: 16, c: '#6b6b73' });
+    prims.push({ k: 'line', x1: 48, y1: 78, x2: w - 48, y2: 78, c: '#b9b9c0', wd: 1.2 });
+    for (let i = 0; i < 14; i += 1) {
+      const y = 108 + i * 48;
+      prims.push({ k: 'rect', x: 48, y, w: 16, h: 16, fill: null, stroke: '#9a9aa2', wd: 1.2 });
+      prims.push({ k: 'line', x1: 76, y1: y + 14, x2: w - 48, y2: y + 14, c: '#d5d5da', wd: 1 });
+    }
+  }
+
+  return prims;
+}
+
+// ---------- Web storage backend (replaces preload.js + main.js + db.js) ----------
+// Same window.dexlieAPI surface as the desktop app, but persisted in the
+// browser: metadata in localStorage, file bytes (PDFs / images) in IndexedDB.
+window.dexlieAPI = (() => {
+  const DB_KEY = 'dexlie.db.v1';
+  let data = null;
+
+  function persist() {
+    localStorage.setItem(DB_KEY, JSON.stringify(data));
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  const EXT_TYPE_MAP = {
+    pdf: 'PDF', docx: 'DOCX', doc: 'DOCX', xlsx: 'XLSX', xls: 'XLSX', txt: 'TXT', md: 'MD',
+  };
+
+  const MIME_BY_EXT = {
+    pdf: 'application/pdf', txt: 'text/plain', md: 'text/plain',
+    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  };
+  function mimeFor(name) {
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    return MIME_BY_EXT[ext] || 'application/octet-stream';
+  }
+
+  // ---------- IndexedDB file store ----------
+  let idbPromise = null;
+  function idb() {
+    if (!idbPromise) {
+      idbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open('dexlie-files', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('files');
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    return idbPromise;
+  }
+  async function fileGet(path) {
+    const db = await idb();
+    return new Promise((resolve) => {
+      const req = db.transaction('files').objectStore('files').get(path);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  }
+  async function filePut(path, bytes, mime) {
+    const db = await idb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('files', 'readwrite');
+      tx.objectStore('files').put({ bytes, mime }, path);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  async function fileDelete(path) {
+    const db = await idb();
+    return new Promise((resolve) => {
+      const tx = db.transaction('files', 'readwrite');
+      tx.objectStore('files').delete(path);
+      tx.oncomplete = resolve;
+      tx.onerror = resolve;
+    });
+  }
+  async function uniqueFileName(prefix, desiredName) {
+    const dot = desiredName.lastIndexOf('.');
+    const base = dot === -1 ? desiredName : desiredName.slice(0, dot);
+    const ext = dot === -1 ? '' : desiredName.slice(dot);
+    let candidate = desiredName;
+    let i = 1;
+    /* eslint-disable no-await-in-loop */
+    while (await fileGet(prefix + candidate)) {
+      candidate = `${base} (${i})${ext}`;
+      i += 1;
+    }
+    return prefix + candidate;
+  }
+  async function blobUrlFor(path) {
+    const f = await fileGet(path);
+    if (!f) return null;
+    return URL.createObjectURL(new Blob([f.bytes], { type: f.mime || 'application/octet-stream' }));
+  }
+
+  // ---------- pdf-lib (lazy, from CDN) ----------
+  let pdfLibPromise = null;
+  function ensurePdfLib() {
+    if (!pdfLibPromise) {
+      pdfLibPromise = new Promise((resolve, reject) => {
+        if (window.PDFLib) { resolve(window.PDFLib); return; }
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+        s.onload = () => resolve(window.PDFLib);
+        s.onerror = () => reject(new Error('Could not load pdf-lib'));
+        document.head.appendChild(s);
+      });
+    }
+    return pdfLibPromise;
+  }
+  async function generateBlankPdfBytes() {
+    const { PDFDocument } = await ensurePdfLib();
+    const doc = await PDFDocument.create();
+    doc.addPage([595.28, 841.89]); // A4
+    return doc.save();
+  }
+
+  // ---------- File picker (replaces the native open dialog) ----------
+  function pickFileDialog(accept) {
+    return new Promise((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      if (accept) input.accept = accept;
+      input.style.display = 'none';
+      document.body.appendChild(input);
+      let done = false;
+      const finish = (file) => {
+        if (done) return;
+        done = true;
+        input.remove();
+        resolve(file);
+      };
+      input.addEventListener('change', () => finish(input.files[0] || null));
+      input.addEventListener('cancel', () => finish(null));
+      window.addEventListener('focus', () => {
+        setTimeout(() => finish(input.files && input.files[0] ? input.files[0] : null), 500);
+      }, { once: true });
+      input.click();
+    });
+  }
+  let pendingPick = null; // last picked File, consumed by importFile()
+
+  // ---------- Folders ----------
+  function findFolder(id) {
+    return data.folders.find((f) => f.id === id) || null;
+  }
+  function findOrCreateFolder(name, parentId) {
+    const existing = data.folders.find((f) => f.name === name && (f.parent_id ?? null) === (parentId ?? null));
+    if (existing) return existing.id;
+    const id = data.nextFolderId;
+    data.nextFolderId += 1;
+    data.folders.push({ id, name, parent_id: parentId ?? null, created_at: new Date().toISOString() });
+    return id;
+  }
+  function buildFolderPath(folderId) {
+    if (folderId == null) return 'Uncategorized';
+    const names = [];
+    let currentId = folderId;
+    const seen = new Set();
+    while (currentId != null && !seen.has(currentId)) {
+      seen.add(currentId);
+      const folder = findFolder(currentId);
+      if (!folder) break;
+      names.unshift(folder.name);
+      currentId = folder.parent_id;
+    }
+    return names.length ? names.join(' › ') : 'Uncategorized';
+  }
+  function getDescendantFolderIds(id) {
+    const childrenOf = new Map();
+    data.folders.forEach((f) => {
+      const key = f.parent_id ?? 'root';
+      if (!childrenOf.has(key)) childrenOf.set(key, []);
+      childrenOf.get(key).push(f.id);
+    });
+    const result = [id];
+    const queue = [id];
+    while (queue.length) {
+      const current = queue.shift();
+      (childrenOf.get(current) || []).forEach((kid) => {
+        result.push(kid);
+        queue.push(kid);
+      });
+    }
+    return result;
+  }
+
+  // One-time migration: seed notes store their folder as a flat string like
+  // "Computer Science › Data Structures" — turn those into real folder rows.
+  function migrateLegacyFolderStrings() {
+    for (const row of data.notes) {
+      if (row.folder_id != null) continue;
+      const raw = (row.folder || '').trim();
+      if (!raw || raw === 'Uncategorized') continue;
+      const segments = raw.split('›').map((s) => s.trim()).filter(Boolean);
+      if (segments.length === 0) continue;
+      let parentId = null;
+      for (const segment of segments) {
+        parentId = findOrCreateFolder(segment, parentId);
+      }
+      row.folder_id = parentId;
+    }
+  }
+
+  // ---------- Seed data (first run only) ----------
+  function seed() {
+    const seedNotes = [
+      { id: 's1', title: 'Binary Trees Overview', folder: 'Computer Science › Data Structures', type: 'PDF', content: '', size_label: '1.2 MB', created_at: '2024-05-12T10:30:00', file_path: 's1.pdf' },
+      { id: 's2', title: 'Dynamic Programming Notes', folder: 'Computer Science › Algorithms', type: 'DOCX', content: '', size_label: '210 KB', created_at: '2024-05-11T21:15:00', file_path: 's2.docx' },
+      { id: 's3', title: 'OS Concepts Summary', folder: 'Computer Science › Operating Systems', type: 'ONE', content: '', size_label: '3.6 MB', created_at: '2024-05-10T16:45:00', file_path: 's3.txt' },
+      { id: 's4', title: 'Calculus Formulas', folder: 'Mathematics › Calculus', type: 'XLSX', content: '', size_label: '145 KB', created_at: '2024-05-09T14:20:00', file_path: 's4.txt' },
+      { id: 's5', title: 'Study Plan', folder: 'Personal', type: 'MD', content: 'Weekly study plan:\n- Mon: Data Structures\n- Wed: Algorithms\n- Fri: Review', size_label: '', created_at: '2024-05-08T11:00:00', file_path: 's5.md' },
+      { id: 's6', title: 'Quick Notes', folder: 'Uncategorized', type: 'TXT', content: '', size_label: '', created_at: '2024-05-07T20:40:00', file_path: 's6.txt' },
+    ];
+    seedNotes.forEach((n) => data.notes.push({ ...n, folder_id: null, annotations: null, orig_path: null }));
+
+    const now = new Date().toISOString();
+    const assignmentId = data.nextAssignmentId;
+    data.nextAssignmentId += 1;
+    data.assignments.push({ id: assignmentId, name: 'Website Redesign', created_at: now });
+
+    const seedTasks = [
+      { title: 'Review design mockups', day: 'Monday', time: '10:00 AM', completed: 0, assignment_id: null },
+      { title: 'Email client updates', day: 'Monday', time: '02:00 PM', completed: 0, assignment_id: null },
+      { title: 'Fix login issues', day: 'Monday', time: '9:30 AM', completed: 1, assignment_id: null },
+      { title: 'Research and inspiration', day: 'Monday', time: null, completed: 1, assignment_id: assignmentId },
+      { title: 'Create wireframes', day: 'Monday', time: null, completed: 1, assignment_id: assignmentId },
+      { title: 'Prepare presentation', day: 'Monday', time: null, completed: 0, assignment_id: assignmentId },
+    ];
+    seedTasks.forEach((t) => {
+      data.tasks.push({ id: data.nextTaskId, ...t, created_at: now });
+      data.nextTaskId += 1;
+    });
+  }
+
+  function init() {
+    try {
+      data = JSON.parse(localStorage.getItem(DB_KEY));
+    } catch {
+      data = null;
+    }
+    if (!data) {
+      data = { notes: [], folders: [], tasks: [], assignments: [], nextFolderId: 1, nextTaskId: 1, nextAssignmentId: 1 };
+      seed();
+    }
+    migrateLegacyFolderStrings();
+    persist();
+  }
+  init();
+
+  // ---------- Notes ----------
+  function findNote(id) {
+    return data.notes.find((n) => n.id === id) || null;
+  }
+  function mapNote(n) {
+    let content = '';
+    if (n.type === 'TXT' || n.type === 'MD') content = n.content || '';
+    return {
+      id: n.id,
+      title: n.title,
+      folderId: n.folder_id ?? null,
+      folderPath: buildFolderPath(n.folder_id ?? null),
+      type: n.type,
+      content,
+      sizeLabel: n.size_label || '',
+      createdAt: n.created_at,
+      filePath: n.file_path || null,
+      absolutePath: null,
+      fileUrl: null,
+    };
+  }
+
+  async function deleteNoteInternal(id) {
+    const row = findNote(id);
+    if (!row) return;
+    for (const rel of [row.file_path, row.orig_path]) {
+      if (rel) await fileDelete(rel);
+    }
+    data.notes = data.notes.filter((n) => n.id !== id);
+    persist();
+  }
+
+  // ---------- PDF flattening (port of db.js, using pdf-lib in-browser) ----------
+  function hexToRgb(PDFLib, hex) {
+    const value = (hex || '#000000').replace('#', '');
+    const full = value.length === 3 ? value.split('').map((c) => c + c).join('') : value;
+    const n = parseInt(full, 16);
+    return PDFLib.rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+  }
+  function pickFont(fonts, el) {
+    if (el.bold && el.italic) return fonts.boldOblique;
+    if (el.bold) return fonts.bold;
+    if (el.italic) return fonts.oblique;
+    return fonts.regular;
+  }
+  function wrapText(text, font, size, maxWidth) {
+    const out = [];
+    for (const rawLine of String(text || '').split('\n')) {
+      const words = rawLine.split(/\s+/).filter(Boolean);
+      if (words.length === 0) {
+        out.push('');
+        continue;
+      }
+      let line = '';
+      for (const word of words) {
+        const candidate = line ? `${line} ${word}` : word;
+        if (font.widthOfTextAtSize(candidate, size) <= maxWidth || !line) {
+          line = candidate;
+        } else {
+          out.push(line);
+          line = word;
+        }
+      }
+      out.push(line);
+    }
+    return out;
+  }
+
+  async function drawElementOnPage(PDFLib, pdfDoc, page, el, fonts, imageCache) {
+    const H = page.getHeight();
+
+    if (el.type === 'text') {
+      const font = pickFont(fonts, el);
+      const size = el.fontSize || 14;
+      const lineHeight = size * 1.3;
+      const lines = wrapText(el.text, font, size, Math.max(10, el.w - 4));
+      let cursorY = H - el.y - size;
+      for (const line of lines) {
+        if (line) {
+          page.drawText(line, { x: el.x + 2, y: cursorY, size, font, color: hexToRgb(PDFLib, el.color || '#1f1f24') });
+        }
+        cursorY -= lineHeight;
+      }
+    } else if (el.type === 'rect') {
+      page.drawRectangle({
+        x: el.x,
+        y: H - el.y - el.h,
+        width: el.w,
+        height: el.h,
+        color: el.fill ? hexToRgb(PDFLib, el.fill) : undefined,
+        borderColor: el.stroke ? hexToRgb(PDFLib, el.stroke) : undefined,
+        borderWidth: el.stroke ? (el.strokeWidth || 1) : 0,
+      });
+    } else if (el.type === 'ellipse') {
+      page.drawEllipse({
+        x: el.x + el.w / 2,
+        y: H - el.y - el.h / 2,
+        xScale: el.w / 2,
+        yScale: el.h / 2,
+        color: el.fill ? hexToRgb(PDFLib, el.fill) : undefined,
+        borderColor: el.stroke ? hexToRgb(PDFLib, el.stroke) : undefined,
+        borderWidth: el.stroke ? (el.strokeWidth || 1) : 0,
+      });
+    } else if (el.type === 'line') {
+      page.drawLine({
+        start: { x: el.x1, y: H - el.y1 },
+        end: { x: el.x2, y: H - el.y2 },
+        thickness: el.strokeWidth || 2,
+        color: hexToRgb(PDFLib, el.stroke || '#1f1f24'),
+        lineCap: PDFLib.LineCapStyle.Round,
+      });
+    } else if (el.type === 'ink') {
+      if (!Array.isArray(el.points) || el.points.length < 2) return;
+      const d = `M ${el.points[0][0]} ${el.points[0][1]} `
+        + el.points.slice(1).map((p) => `L ${p[0]} ${p[1]}`).join(' ');
+      page.drawSvgPath(d, {
+        x: 0,
+        y: H,
+        borderColor: hexToRgb(PDFLib, el.stroke || '#1f1f24'),
+        borderWidth: el.strokeWidth || 2,
+        borderOpacity: el.opacity == null ? 1 : el.opacity,
+        borderLineCap: PDFLib.LineCapStyle.Round,
+      });
+    } else if (el.type === 'image') {
+      if (!el.src) return;
+      let embedded = imageCache.get(el.src);
+      if (embedded === undefined) {
+        try {
+          const f = await fileGet(el.src);
+          if (!f) throw new Error('missing asset');
+          const isPng = el.src.toLowerCase().endsWith('.png') || (f.mime || '').includes('png');
+          embedded = isPng
+            ? await pdfDoc.embedPng(f.bytes)
+            : await pdfDoc.embedJpg(f.bytes);
+        } catch {
+          embedded = null; // Missing/unsupported asset — skip rather than fail the save.
+        }
+        imageCache.set(el.src, embedded);
+      }
+      if (embedded) {
+        page.drawImage(embedded, { x: el.x, y: H - el.y - el.h, width: el.w, height: el.h });
+      }
+    } else if (el.type === 'layout') {
+      for (const p of layoutPrimitives(el.variant, page.getWidth(), H)) {
+        if (p.k === 'line') {
+          page.drawLine({
+            start: { x: p.x1, y: H - p.y1 },
+            end: { x: p.x2, y: H - p.y2 },
+            thickness: p.wd,
+            color: hexToRgb(PDFLib, p.c),
+          });
+        } else if (p.k === 'rect') {
+          page.drawRectangle({
+            x: p.x,
+            y: H - p.y - p.h,
+            width: p.w,
+            height: p.h,
+            color: p.fill ? hexToRgb(PDFLib, p.fill) : undefined,
+            borderColor: p.stroke ? hexToRgb(PDFLib, p.stroke) : undefined,
+            borderWidth: p.stroke ? p.wd : 0,
+          });
+        } else if (p.k === 'text') {
+          page.drawText(p.t, { x: p.x, y: H - p.y - p.size, size: p.size, font: fonts.regular, color: hexToRgb(PDFLib, p.c) });
+        }
+      }
+    }
+  }
+
+  async function flattenPdf(noteRow, model) {
+    const PDFLib = await ensurePdfLib();
+    const pdfDoc = await PDFLib.PDFDocument.create();
+    const fonts = {
+      regular: await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica),
+      bold: await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold),
+      oblique: await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaOblique),
+      boldOblique: await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBoldOblique),
+    };
+
+    let origDoc = null;
+    if (noteRow.orig_path) {
+      try {
+        const f = await fileGet(noteRow.orig_path);
+        if (f) origDoc = await PDFLib.PDFDocument.load(f.bytes);
+      } catch {
+        origDoc = null;
+      }
+    }
+
+    const imageCache = new Map();
+    for (const mpage of model.pages) {
+      let page;
+      if (origDoc && mpage.bgIndex != null && mpage.bgIndex < origDoc.getPageCount()) {
+        const [copied] = await pdfDoc.copyPages(origDoc, [mpage.bgIndex]);
+        page = pdfDoc.addPage(copied);
+      } else {
+        page = pdfDoc.addPage([mpage.w || 595.28, mpage.h || 841.89]);
+      }
+      for (const el of mpage.elements || []) {
+        await drawElementOnPage(PDFLib, pdfDoc, page, el, fonts, imageCache);
+      }
+    }
+
+    const bytes = await pdfDoc.save();
+    if (!noteRow.file_path) noteRow.file_path = `${noteRow.id}.pdf`;
+    await filePut(noteRow.file_path, bytes.buffer ? bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) : bytes, 'application/pdf');
+    return formatBytes(bytes.byteLength ?? bytes.length);
+  }
+
+  // ---------- Public API (same shape as preload.js) ----------
+  return {
+    notes: {
+      list: async () => data.notes
+        .slice()
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .map(mapNote),
+
+      create: async (note) => {
+        const id = note.id || `n${Date.now()}`;
+        data.notes.push({
+          id,
+          title: note.title,
+          folder: '',
+          folder_id: note.folderId ?? null,
+          type: note.type || 'MD',
+          content: note.content || '',
+          size_label: note.sizeLabel || '',
+          created_at: new Date().toISOString(),
+          file_path: null,
+          annotations: null,
+          orig_path: null,
+        });
+        persist();
+        return id;
+      },
+
+      update: async (id, fields) => {
+        const existing = findNote(id);
+        if (!existing) return;
+        if (typeof fields.content === 'string' && (existing.type === 'TXT' || existing.type === 'MD')) {
+          existing.content = fields.content;
+          existing.size_label = formatBytes(new Blob([fields.content]).size);
+        }
+        existing.title = fields.title;
+        existing.folder_id = fields.folderId ?? null;
+        existing.created_at = new Date().toISOString();
+        persist();
+      },
+
+      delete: async (id) => deleteNoteInternal(id),
+
+      pickFile: async () => {
+        const file = await pickFileDialog();
+        if (!file) return null;
+        pendingPick = file;
+        return file.name;
+      },
+
+      importFile: async () => {
+        const file = pendingPick;
+        pendingPick = null;
+        if (!file) return null;
+
+        const bytes = await file.arrayBuffer();
+        const destPath = await uniqueFileName('', file.name);
+        await filePut(destPath, bytes, file.type || mimeFor(file.name));
+
+        const dot = file.name.lastIndexOf('.');
+        const ext = dot === -1 ? '' : file.name.slice(dot + 1).toLowerCase();
+        const type = EXT_TYPE_MAP[ext] || (ext ? ext.toUpperCase().slice(0, 6) : 'FILE');
+        const title = dot === -1 ? file.name : file.name.slice(0, dot);
+        const id = `n${Date.now()}`;
+
+        let content = '';
+        if (type === 'TXT' || type === 'MD') {
+          content = await new Blob([bytes]).text();
+        }
+
+        data.notes.push({
+          id,
+          title,
+          folder: '',
+          folder_id: null,
+          type,
+          content,
+          size_label: formatBytes(bytes.byteLength),
+          created_at: new Date().toISOString(),
+          file_path: destPath,
+          annotations: null,
+          orig_path: null,
+        });
+        persist();
+        return mapNote(findNote(id));
+      },
+
+      createBlank: async ({ title, type, folderId }) => {
+        const id = `n${Date.now()}`;
+        const fileName = `${id}.${type}`;
+        let sizeLabel = '0 B';
+        let content = '';
+
+        if (type === 'txt') {
+          content = '';
+        } else if (type === 'pdf') {
+          const bytes = await generateBlankPdfBytes();
+          await filePut(fileName, bytes.buffer ? bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) : bytes, 'application/pdf');
+          sizeLabel = formatBytes(bytes.byteLength ?? bytes.length);
+        } else if (type === 'docx') {
+          const placeholder = new TextEncoder().encode(`${title || 'Untitled note'}\n\nThis is a placeholder file — the web version of Dexlie doesn't generate real DOCX files.`);
+          await filePut(fileName, placeholder.buffer, 'text/plain');
+          sizeLabel = formatBytes(placeholder.byteLength);
+        } else {
+          throw new Error(`Unsupported note type: ${type}`);
+        }
+
+        data.notes.push({
+          id,
+          title: title || 'Untitled note',
+          folder: '',
+          folder_id: folderId ?? null,
+          type: type.toUpperCase(),
+          content,
+          size_label: sizeLabel,
+          created_at: new Date().toISOString(),
+          file_path: fileName,
+          annotations: null,
+          orig_path: null,
+        });
+        persist();
+        return mapNote(findNote(id));
+      },
+
+      openExternal: async (id) => {
+        const row = findNote(id);
+        if (!row) return false;
+        let url = null;
+        if (row.type === 'TXT' || row.type === 'MD') {
+          url = URL.createObjectURL(new Blob([row.content || ''], { type: 'text/plain' }));
+        } else if (row.file_path) {
+          url = await blobUrlFor(row.file_path);
+        }
+        if (!url) {
+          url = URL.createObjectURL(new Blob(
+            [`${row.title}\n\nThis is a placeholder for a "${row.type}" demo note — the web version of Dexlie doesn't store a real ${row.type} file for it.`],
+            { type: 'text/plain' }
+          ));
+        }
+        window.open(url, '_blank');
+        return true;
+      },
+
+      revealInFolder: async (id) => {
+        // No file system in the browser — downloading the file is the
+        // closest equivalent of "Reveal in folder".
+        const row = findNote(id);
+        if (!row) return false;
+        let url = null;
+        let name = row.file_path || `${row.title}.${(row.type || 'txt').toLowerCase()}`;
+        if (row.type === 'TXT' || row.type === 'MD') {
+          url = URL.createObjectURL(new Blob([row.content || ''], { type: 'text/plain' }));
+        } else if (row.file_path) {
+          url = await blobUrlFor(row.file_path);
+        }
+        if (!url) return false;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return true;
+      },
+    },
+
+    pdf: {
+      openForEdit: async (id) => {
+        const row = findNote(id);
+        if (!row) return null;
+
+        // First open: snapshot the file as-is so later saves always
+        // flatten onto a clean background.
+        if (!row.orig_path || !(await fileGet(row.orig_path))) {
+          if (row.file_path) {
+            const f = await fileGet(row.file_path);
+            if (f) {
+              row.orig_path = await uniqueFileName('', `${row.id}.orig.pdf`);
+              await filePut(row.orig_path, f.bytes, 'application/pdf');
+              persist();
+            }
+          }
+        }
+
+        let pdfData = null;
+        if (row.orig_path) {
+          const f = await fileGet(row.orig_path);
+          if (f) pdfData = new Uint8Array(f.bytes.slice(0));
+        }
+
+        let model = null;
+        if (row.annotations) {
+          try {
+            model = JSON.parse(row.annotations);
+          } catch {
+            model = null;
+          }
+        }
+
+        // Blob URLs don't survive reloads — refresh image previews from
+        // the stored asset bytes.
+        if (model && Array.isArray(model.pages)) {
+          for (const page of model.pages) {
+            for (const el of page.elements || []) {
+              if (el.type === 'image' && el.src) {
+                el.fileUrl = (await blobUrlFor(el.src)) || '';
+              }
+            }
+          }
+        }
+
+        return { note: mapNote(row), model, pdfData };
+      },
+
+      save: async (id, model, title) => {
+        const row = findNote(id);
+        if (!row) return null;
+        const sizeLabel = await flattenPdf(row, model);
+        row.annotations = JSON.stringify(model);
+        row.size_label = sizeLabel;
+        row.title = title || row.title;
+        persist();
+        return mapNote(row);
+      },
+
+      pickImage: async () => {
+        const file = await pickFileDialog('image/png,image/jpeg');
+        if (!file) return null;
+        const bytes = await file.arrayBuffer();
+        const rel = await uniqueFileName('assets/', file.name);
+        await filePut(rel, bytes, file.type || mimeFor(file.name));
+        return { relPath: rel, fileUrl: URL.createObjectURL(new Blob([bytes], { type: file.type || mimeFor(file.name) })) };
+      },
+    },
+
+    folders: {
+      list: async () => data.folders
+        .slice()
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        .map((f) => ({ id: f.id, name: f.name, parentId: f.parent_id, createdAt: f.created_at })),
+
+      create: async ({ name, parentId }) => {
+        const id = data.nextFolderId;
+        data.nextFolderId += 1;
+        data.folders.push({ id, name, parent_id: parentId ?? null, created_at: new Date().toISOString() });
+        persist();
+        return id;
+      },
+
+      rename: async (id, name) => {
+        const folder = findFolder(id);
+        if (folder) folder.name = name;
+        persist();
+      },
+
+      // "Delete Folder" — removes just this one folder. Its direct
+      // sub-folders are promoted up to its own parent, and notes inside it
+      // fall back to Uncategorized.
+      delete: async (id) => {
+        const folder = findFolder(id);
+        if (!folder) return;
+        data.folders.forEach((f) => {
+          if (f.parent_id === id) f.parent_id = folder.parent_id;
+        });
+        data.notes.forEach((n) => {
+          if (n.folder_id === id) n.folder_id = null;
+        });
+        data.folders = data.folders.filter((f) => f.id !== id);
+        persist();
+      },
+
+      // "Delete Whole" — deletes this folder, every folder inside it, and
+      // every note anywhere in that subtree (their stored files too).
+      deleteCascade: async (id) => {
+        const ids = new Set(getDescendantFolderIds(id));
+        const noteIds = data.notes.filter((n) => n.folder_id != null && ids.has(n.folder_id)).map((n) => n.id);
+        for (const noteId of noteIds) {
+          await deleteNoteInternal(noteId);
+        }
+        data.folders = data.folders.filter((f) => !ids.has(f.id));
+        persist();
+      },
+    },
+
+    tasks: {
+      list: async () => data.tasks
+        .slice()
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        .map((t) => ({ id: t.id, title: t.title, day: t.day, time: t.time, completed: !!t.completed, assignmentId: t.assignment_id })),
+
+      create: async ({ title, day = null, time = null, assignmentId = null }) => {
+        const id = data.nextTaskId;
+        data.nextTaskId += 1;
+        data.tasks.push({ id, title, day, time, completed: 0, assignment_id: assignmentId, created_at: new Date().toISOString() });
+        persist();
+        return id;
+      },
+
+      setCompleted: async (id, completed) => {
+        const task = data.tasks.find((t) => t.id === id);
+        if (task) task.completed = completed ? 1 : 0;
+        persist();
+      },
+
+      delete: async (id) => {
+        data.tasks = data.tasks.filter((t) => t.id !== id);
+        persist();
+      },
+    },
+
+    assignments: {
+      list: async () => data.assignments
+        .slice()
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        .map((a) => ({ id: a.id, name: a.name, createdAt: a.created_at })),
+
+      create: async ({ name }) => {
+        const id = data.nextAssignmentId;
+        data.nextAssignmentId += 1;
+        data.assignments.push({ id, name, created_at: new Date().toISOString() });
+        persist();
+        return id;
+      },
+
+      delete: async (id) => {
+        data.assignments = data.assignments.filter((a) => a.id !== id);
+        data.tasks = data.tasks.filter((t) => t.assignment_id !== id);
+        persist();
+      },
+    },
+  };
+})();
+
+// ---------- Sidebar navigation ----------
+{
+  const navItems = document.querySelectorAll('.nav-item[data-view]');
+  navItems.forEach((item) => {
+    item.addEventListener('click', () => showView(item.dataset.view));
+  });
+
+  // Collapse / expand
+  const sidebarEl = document.querySelector('.sidebar');
+  const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+
+  sidebarToggleBtn?.addEventListener('click', () => {
+    const collapsed = sidebarEl.classList.toggle('collapsed');
+    sidebarToggleBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  });
+}
+
+// ---------- Shared UI widgets ----------
+{
+  // Checkboxes (Dashboard, Tasks, Pomodoro task rows)
+  document.body.addEventListener('click', (e) => {
+    const box = e.target.closest('.checkbox');
+    if (!box) return;
+    box.classList.toggle('checked');
+    const row = box.closest('.task-row');
+    if (row) row.classList.toggle('completed', box.classList.contains('checked'));
+  });
+
+  // Collapsible sections (e.g. "Completed" list on the Tasks page)
+  document.querySelectorAll('.section-toggle').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const chevron = toggle.querySelector('.icon use');
+      const list = toggle.nextElementSibling;
+      if (!list) return;
+      const collapsed = list.classList.toggle('collapsed');
+      if (chevron) chevron.setAttribute('href', collapsed ? '#icon-chevron-down' : '#icon-chevron-up');
+    });
+  });
+
+  // Collapsible assignment groups (Tasks and Pomodoro pages)
+  document.querySelectorAll('.assignment-header .chev-toggle').forEach((chev) => {
+    chev.addEventListener('click', () => {
+      const assignment = chev.closest('.assignment');
+      const collapsed = assignment.classList.toggle('collapsed');
+      chev.querySelector('use')?.setAttribute('href', collapsed ? '#icon-chevron-right' : '#icon-chevron-up');
+    });
+  });
+}
+
+// ---------- Tasks page ----------
+{
+  // Day-of-week tab switching on the Tasks page.
+  document.querySelectorAll('.day-tabs').forEach((group) => {
+    group.querySelectorAll('.day-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        group.querySelectorAll('.day-tab').forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+  });
+}
+
+// ---------- Pomodoro page ----------
+{
+  // Tasks / Assignments tab underline
+  document.querySelectorAll('.tabs-underline').forEach((group) => {
+    group.querySelectorAll('.tab-underline-item').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        group.querySelectorAll('.tab-underline-item').forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+  });
+
+  // ---------- Timer ----------
+  const MODES = {
+    focus: { seconds: 25 * 60, label: 'Focus Time' },
+    short: { seconds: 5 * 60, label: 'Short Break' },
+    long: { seconds: 15 * 60, label: 'Long Break' },
+  };
+
+  const ringProgress = document.getElementById('ring-progress');
+  const timerDisplay = document.getElementById('timer-display');
+  const timerLabelText = document.getElementById('timer-label-text');
+  const timerStartBtn = document.getElementById('timer-start-btn');
+  const timerStartLabel = document.getElementById('timer-start-label');
+  const statPomodoros = document.getElementById('stat-pomodoros');
+  const statFocusTime = document.getElementById('stat-focustime');
+
+  const RING_CIRCUMFERENCE = 615.75;
+
+  let currentMode = 'focus';
+  let remaining = MODES.focus.seconds;
+  let running = false;
+  let intervalId = null;
+  let pomodorosCompleted = 2;
+  let focusSecondsToday = 50 * 60;
+
+  function formatTime(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const s = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function updateDisplay() {
+    if (timerDisplay) timerDisplay.textContent = formatTime(remaining);
+    const total = MODES[currentMode].seconds;
+    const fraction = total > 0 ? remaining / total : 0;
+    if (ringProgress) ringProgress.style.strokeDashoffset = String(RING_CIRCUMFERENCE * (1 - fraction));
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    remaining = MODES[mode].seconds;
+    if (timerLabelText) timerLabelText.textContent = MODES[mode].label;
+    pauseTimer();
+    updateDisplay();
+  }
+
+  function tick() {
+    if (remaining <= 0) {
+      pauseTimer();
+      if (currentMode === 'focus') {
+        pomodorosCompleted += 1;
+        focusSecondsToday += MODES.focus.seconds;
+        if (statPomodoros) statPomodoros.textContent = String(pomodorosCompleted);
+        if (statFocusTime) statFocusTime.textContent = `${Math.floor(focusSecondsToday / 60)}m`;
+      }
+      return;
+    }
+    remaining -= 1;
+    updateDisplay();
+  }
+
+  function startTimer() {
+    running = true;
+    if (timerStartLabel) timerStartLabel.textContent = 'Pause';
+    timerStartBtn?.querySelector('use')?.setAttribute('href', '#icon-sliders');
+    intervalId = setInterval(tick, 1000);
+  }
+
+  function pauseTimer() {
+    running = false;
+    if (timerStartLabel) timerStartLabel.textContent = 'Start';
+    if (intervalId) clearInterval(intervalId);
+    intervalId = null;
+  }
+
+  timerStartBtn?.addEventListener('click', () => {
+    if (running) pauseTimer();
+    else startTimer();
+  });
+
+  document.querySelectorAll('.mode-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.mode-tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      setMode(tab.dataset.mode);
+    });
+  });
+
+  document.querySelectorAll('[data-task-name]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (timerLabelText) timerLabelText.textContent = btn.dataset.taskName;
+      document.querySelectorAll('.mode-tab').forEach((t) => t.classList.toggle('active', t.dataset.mode === 'focus'));
+      setMode('focus');
+      if (timerLabelText) timerLabelText.textContent = btn.dataset.taskName;
+    });
+  });
+
+  if (ringProgress) {
+    ringProgress.style.strokeDasharray = String(RING_CIRCUMFERENCE);
+    updateDisplay();
+  }
+}
+
+// ---------- PDF Editor (Canva-style canvas on A4 sheets) ----------
+// The single place PDFs are viewed AND edited. Pages of the real PDF render
+// as backgrounds (via pdf.js); draggable/resizable elements — text boxes,
+// images, shapes, lines, freehand ink and preset layouts — live on top.
+let openPdfEditor;
+{
+  const A4 = { w: 595.28, h: 841.89 };
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  // pdf.js is heavy, so it's loaded lazily (from CDN) the first time a PDF
+  // is opened.
+  let pdfjsLib = null;
+  async function ensurePdfjs() {
+    if (!pdfjsLib) {
+      pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs');
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs';
+    }
+    return pdfjsLib;
+  }
+
+  // ---------- State ----------
+  let note = null;           // note being edited
+  let model = null;          // { v:1, pages:[{ bgIndex, w, h, elements:[] }] }
+  let bgDoc = null;          // pdf.js document for background pages
+  let zoom = 1;
+  let tool = 'select';
+  let selected = null;       // { pageIdx, elId }
+  let dirty = false;
+  let idCounter = 1;
+  let undoStack = [];
+  let redoStack = [];
+  let onCloseCallback = null;
+  let clipboardEl = null;    // last copied element (right-click Copy)
+
+  // Defaults applied to newly created elements (updated by the props bar).
+  const defaults = {
+    fontSize: 14,
+    bold: false,
+    italic: false,
+    color: '#1f1f24',
+    fill: '#ffd166',
+    stroke: '#1f1f24',
+    strokeWidth: 2,
+  };
+
+  // ---------- DOM ----------
+  const pagesEl = document.getElementById('pdfed-pages');
+  const scrollEl = document.getElementById('pdfed-scroll');
+  const titleInput = document.getElementById('pdfed-title');
+  const statusEl = document.getElementById('pdfed-status');
+  const zoomLabel = document.getElementById('pdfed-zoom-label');
+  const fontSizeInput = document.getElementById('pdfed-fontsize');
+  const boldBtn = document.getElementById('pdfed-bold');
+  const italicBtn = document.getElementById('pdfed-italic');
+  const colorInput = document.getElementById('pdfed-color');
+  const fillInput = document.getElementById('pdfed-fill');
+  const noFillBtn = document.getElementById('pdfed-nofill');
+  const strokeWInput = document.getElementById('pdfed-strokew');
+
+  function nextId() {
+    idCounter += 1;
+    return `e${Date.now()}_${idCounter}`;
+  }
+
+  function setStatus(text) {
+    if (statusEl) statusEl.textContent = text;
+  }
+
+  function markDirty() {
+    dirty = true;
+    setStatus('Unsaved changes');
+  }
+
+  // ---------- Undo / redo ----------
+  function pushUndo() {
+    undoStack.push(JSON.stringify(model));
+    if (undoStack.length > 60) undoStack.shift();
+    redoStack = [];
+  }
+
+  function undo() {
+    if (!undoStack.length) return;
+    redoStack.push(JSON.stringify(model));
+    model = JSON.parse(undoStack.pop());
+    selected = null;
+    markDirty();
+    renderAll();
+  }
+
+  function redo() {
+    if (!redoStack.length) return;
+    undoStack.push(JSON.stringify(model));
+    model = JSON.parse(redoStack.pop());
+    selected = null;
+    markDirty();
+    renderAll();
+  }
+
+  // ---------- Model helpers ----------
+  function getSelectedElement() {
+    if (!selected) return null;
+    const page = model.pages[selected.pageIdx];
+    return page?.elements.find((e) => e.id === selected.elId) || null;
+  }
+
+  function deleteSelected() {
+    if (!selected) return;
+    deleteElement(selected.pageIdx, selected.elId);
+  }
+
+  function deleteElement(pageIdx, elId) {
+    const page = model.pages[pageIdx];
+    const idx = page.elements.findIndex((e) => e.id === elId);
+    if (idx === -1) return;
+    pushUndo();
+    page.elements.splice(idx, 1);
+    if (selected && selected.pageIdx === pageIdx && selected.elId === elId) selected = null;
+    markDirty();
+    renderPage(pageIdx);
+    syncPropsBar();
+  }
+
+  // Offsets an element's geometry in place — shared by duplicate (small
+  // nudge) and paste (land at the cursor).
+  function offsetElement(el, dx, dy) {
+    if (el.type === 'line') {
+      el.x1 += dx; el.y1 += dy; el.x2 += dx; el.y2 += dy;
+    } else if (el.type === 'ink') {
+      el.points = el.points.map((p) => [p[0] + dx, p[1] + dy]);
+    } else if (el.type !== 'layout') {
+      el.x += dx; el.y += dy;
+    }
+  }
+
+  function duplicateElement(pageIdx, elId) {
+    const page = model.pages[pageIdx];
+    const idx = page.elements.findIndex((e) => e.id === elId);
+    if (idx === -1) return;
+    pushUndo();
+    const clone = JSON.parse(JSON.stringify(page.elements[idx]));
+    clone.id = nextId();
+    offsetElement(clone, 16, 16);
+    page.elements.splice(idx + 1, 0, clone);
+    markDirty();
+    setSelected(pageIdx, clone.id);
+  }
+
+  function copyElement(pageIdx, elId) {
+    const el = model.pages[pageIdx]?.elements.find((e) => e.id === elId);
+    if (!el) return;
+    clipboardEl = JSON.parse(JSON.stringify(el));
+  }
+
+  function pasteElement(pageIdx, pt) {
+    if (!clipboardEl) return;
+    pushUndo();
+    const clone = JSON.parse(JSON.stringify(clipboardEl));
+    clone.id = nextId();
+    const b = elementBounds(clone, model.pages[pageIdx]);
+    offsetElement(clone, pt.x - b.x, pt.y - b.y);
+    model.pages[pageIdx].elements.push(clone);
+    markDirty();
+    setSelected(pageIdx, clone.id);
+  }
+
+  function duplicatePage(i) {
+    if (!model) return;
+    pushUndo();
+    const clone = JSON.parse(JSON.stringify(model.pages[i]));
+    clone.elements.forEach((el) => { el.id = nextId(); });
+    model.pages.splice(i + 1, 0, clone);
+    markDirty();
+    renderAll();
+  }
+
+  // ---------- Opening ----------
+  // `initialLayoutVariant` (a LAYOUTS[].id) pre-applies a starting layout to
+  // page 1, but only for a brand-new note with no saved annotations yet.
+  openPdfEditor = async function (noteToOpen, onClose, initialLayoutVariant) {
+    onCloseCallback = onClose || null;
+    setStatus('Loading…');
+    showView('pdf-editor');
+
+    note = noteToOpen;
+    titleInput.value = note.title;
+    model = null;
+    bgDoc = null;
+    selected = null;
+    undoStack = [];
+    redoStack = [];
+    dirty = false;
+    tool = 'select';
+    syncToolButtons();
+    pagesEl.innerHTML = '';
+
+    const payload = await window.dexlieAPI.pdf.openForEdit(note.id);
+    if (!payload) {
+      setStatus('Could not open this PDF.');
+      return;
+    }
+
+    if (payload.pdfData && payload.pdfData.length > 0) {
+      try {
+        const lib = await ensurePdfjs();
+        bgDoc = await lib.getDocument({ data: payload.pdfData }).promise;
+      } catch (err) {
+        console.warn('pdf.js could not render backgrounds:', err);
+        bgDoc = null;
+      }
+    }
+
+    const hasSavedModel = Boolean(payload.model && Array.isArray(payload.model.pages) && payload.model.pages.length);
+    if (hasSavedModel) {
+      model = payload.model;
+    } else {
+      model = { v: 1, pages: [] };
+      if (bgDoc) {
+        for (let i = 0; i < bgDoc.numPages; i += 1) {
+          const page = await bgDoc.getPage(i + 1);
+          const vp = page.getViewport({ scale: 1 });
+          model.pages.push({ bgIndex: i, w: vp.width, h: vp.height, elements: [] });
+        }
+      }
+      if (model.pages.length === 0) {
+        model.pages.push({ bgIndex: null, w: A4.w, h: A4.h, elements: [] });
+      }
+    }
+
+    // Pre-apply a starting layout to page 1, but only for a fresh note with
+    // no saved annotations yet.
+    if (initialLayoutVariant && !hasSavedModel) {
+      model.pages[0].elements.unshift({ id: nextId(), type: 'layout', variant: initialLayoutVariant });
+      markDirty();
+    }
+
+    zoom = fitZoomToWidth();
+
+    setStatus('');
+    renderAll();
+  };
+
+  // Fit-to-width default zoom.
+  function fitZoomToWidth() {
+    const pageW = model?.pages[0]?.w || A4.w;
+    const available = (scrollEl?.clientWidth || 900) - 32;
+    return Math.min(2.4, Math.max(0.5, available / pageW));
+  }
+
+  // ---------- Rendering ----------
+  function renderAll() {
+    if (zoomLabel) zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
+    pagesEl.innerHTML = '';
+    model.pages.forEach((_, i) => {
+      pagesEl.appendChild(buildPageNode(i));
+      renderPage(i);
+      renderBackground(i);
+    });
+  }
+
+  function pageNode(i) {
+    return pagesEl.querySelector(`.pdfed-page[data-page="${i}"]`);
+  }
+
+  function buildPageNode(i) {
+    const p = model.pages[i];
+    const node = document.createElement('div');
+    node.className = 'pdfed-page';
+    node.dataset.page = String(i);
+    node.style.width = `${p.w * zoom}px`;
+    node.style.height = `${p.h * zoom}px`;
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'pdfed-bg';
+    node.appendChild(canvas);
+
+    const elLayer = document.createElement('div');
+    elLayer.className = 'pdfed-el-layer';
+    node.appendChild(elLayer);
+
+    const drawLayer = document.createElementNS(SVG_NS, 'svg');
+    drawLayer.classList.add('pdfed-draw-layer');
+    drawLayer.setAttribute('viewBox', `0 0 ${p.w} ${p.h}`);
+    node.appendChild(drawLayer);
+
+    const badge = document.createElement('div');
+    badge.className = 'pdfed-page-badge';
+    badge.innerHTML = `<span>Page ${i + 1} / ${model.pages.length}</span>`;
+    const delBtn = document.createElement('button');
+    delBtn.className = 'pdfed-page-del';
+    delBtn.title = 'Delete page';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', () => deletePage(i));
+    badge.appendChild(delBtn);
+    node.appendChild(badge);
+
+    node.addEventListener('pointerdown', (e) => onPagePointerDown(e, i));
+    node.addEventListener('dblclick', (e) => onPageDblClick(e, i));
+    node.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const pt = pagePoint(e, i);
+      showContextMenu(e.clientX, e.clientY, [
+        { label: 'Paste', disabled: !clipboardEl, onClick: () => pasteElement(i, pt) },
+        { label: 'Duplicate page', onClick: () => duplicatePage(i) },
+      ]);
+    });
+    return node;
+  }
+
+  async function renderBackground(i) {
+    const p = model.pages[i];
+    const node = pageNode(i);
+    if (!node) return;
+    const canvas = node.querySelector('.pdfed-bg');
+    const dpr = window.devicePixelRatio || 1;
+
+    if (bgDoc && p.bgIndex != null && p.bgIndex < bgDoc.numPages) {
+      try {
+        const page = await bgDoc.getPage(p.bgIndex + 1);
+        const vp = page.getViewport({ scale: zoom * dpr });
+        canvas.width = vp.width;
+        canvas.height = vp.height;
+        canvas.style.width = `${p.w * zoom}px`;
+        canvas.style.height = `${p.h * zoom}px`;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        return;
+      } catch (err) {
+        console.warn(`Background render failed for page ${i}:`, err);
+      }
+    }
+    // Blank page.
+    canvas.width = Math.round(p.w * zoom * dpr);
+    canvas.height = Math.round(p.h * zoom * dpr);
+    canvas.style.width = `${p.w * zoom}px`;
+    canvas.style.height = `${p.h * zoom}px`;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function renderPage(i) {
+    const node = pageNode(i);
+    if (!node) return;
+    const layer = node.querySelector('.pdfed-el-layer');
+    layer.innerHTML = '';
+    model.pages[i].elements.forEach((el) => layer.appendChild(buildElementNode(i, el)));
+  }
+
+  // Ink and lines get their geometry from points, layouts always cover the
+  // full page, everything else from x/y/w/h.
+  function elementBounds(el, page) {
+    if (el.type === 'layout') {
+      return { x: 0, y: 0, w: page.w, h: page.h };
+    }
+    if (el.type === 'line') {
+      const x = Math.min(el.x1, el.x2);
+      const y = Math.min(el.y1, el.y2);
+      return { x, y, w: Math.max(Math.abs(el.x2 - el.x1), 1), h: Math.max(Math.abs(el.y2 - el.y1), 1) };
+    }
+    if (el.type === 'ink') {
+      const xs = el.points.map((p) => p[0]);
+      const ys = el.points.map((p) => p[1]);
+      const x = Math.min(...xs);
+      const y = Math.min(...ys);
+      return { x, y, w: Math.max(Math.max(...xs) - x, 1), h: Math.max(Math.max(...ys) - y, 1) };
+    }
+    return { x: el.x, y: el.y, w: el.w, h: el.h };
+  }
+
+  function buildElementNode(pageIdx, el) {
+    const b = elementBounds(el, model.pages[pageIdx]);
+    const node = document.createElement('div');
+    node.className = `pdfed-el pdfed-el-${el.type}`;
+    node.dataset.elid = el.id;
+    node.style.left = `${b.x * zoom}px`;
+    node.style.top = `${b.y * zoom}px`;
+    node.style.width = `${b.w * zoom}px`;
+    node.style.height = `${b.h * zoom}px`;
+
+    if (el.type === 'text') {
+      const inner = document.createElement('div');
+      inner.className = 'pdfed-text';
+      inner.style.fontSize = `${(el.fontSize || 14) * zoom}px`;
+      inner.style.fontWeight = el.bold ? '700' : '400';
+      inner.style.fontStyle = el.italic ? 'italic' : 'normal';
+      inner.style.color = el.color || '#1f1f24';
+      inner.textContent = el.text || '';
+      node.appendChild(inner);
+    } else if (el.type === 'image') {
+      const img = document.createElement('img');
+      img.src = el.fileUrl || '';
+      img.draggable = false;
+      node.appendChild(img);
+    } else if (el.type === 'rect' || el.type === 'ellipse') {
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('viewBox', `0 0 ${b.w} ${b.h}`);
+      svg.setAttribute('preserveAspectRatio', 'none');
+      const sw = el.strokeWidth || 1;
+      const shape = document.createElementNS(SVG_NS, el.type === 'rect' ? 'rect' : 'ellipse');
+      if (el.type === 'rect') {
+        shape.setAttribute('x', sw / 2);
+        shape.setAttribute('y', sw / 2);
+        shape.setAttribute('width', Math.max(b.w - sw, 1));
+        shape.setAttribute('height', Math.max(b.h - sw, 1));
+      } else {
+        shape.setAttribute('cx', b.w / 2);
+        shape.setAttribute('cy', b.h / 2);
+        shape.setAttribute('rx', Math.max(b.w / 2 - sw / 2, 1));
+        shape.setAttribute('ry', Math.max(b.h / 2 - sw / 2, 1));
+      }
+      shape.setAttribute('fill', el.fill || 'none');
+      shape.setAttribute('stroke', el.stroke || 'none');
+      shape.setAttribute('stroke-width', sw);
+      svg.appendChild(shape);
+      node.appendChild(svg);
+    } else if (el.type === 'line') {
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('viewBox', `0 0 ${b.w} ${b.h}`);
+      svg.setAttribute('preserveAspectRatio', 'none');
+      const line = document.createElementNS(SVG_NS, 'line');
+      line.setAttribute('x1', el.x1 - b.x);
+      line.setAttribute('y1', el.y1 - b.y);
+      line.setAttribute('x2', el.x2 - b.x);
+      line.setAttribute('y2', el.y2 - b.y);
+      line.setAttribute('stroke', el.stroke || '#1f1f24');
+      line.setAttribute('stroke-width', el.strokeWidth || 2);
+      line.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(line);
+      node.appendChild(svg);
+    } else if (el.type === 'ink') {
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('viewBox', `0 0 ${b.w} ${b.h}`);
+      const path = document.createElementNS(SVG_NS, 'path');
+      path.setAttribute('d', `M ${el.points[0][0] - b.x} ${el.points[0][1] - b.y} `
+        + el.points.slice(1).map((p) => `L ${p[0] - b.x} ${p[1] - b.y}`).join(' '));
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', el.stroke || '#1f1f24');
+      path.setAttribute('stroke-width', el.strokeWidth || 2);
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('opacity', el.opacity == null ? 1 : el.opacity);
+      svg.appendChild(path);
+      node.appendChild(svg);
+    } else if (el.type === 'layout') {
+      const p = model.pages[pageIdx];
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('viewBox', `0 0 ${p.w} ${p.h}`);
+      for (const prim of layoutPrimitives(el.variant, p.w, p.h)) {
+        if (prim.k === 'line') {
+          const ln = document.createElementNS(SVG_NS, 'line');
+          ln.setAttribute('x1', prim.x1); ln.setAttribute('y1', prim.y1);
+          ln.setAttribute('x2', prim.x2); ln.setAttribute('y2', prim.y2);
+          ln.setAttribute('stroke', prim.c);
+          ln.setAttribute('stroke-width', prim.wd);
+          svg.appendChild(ln);
+        } else if (prim.k === 'rect') {
+          const r = document.createElementNS(SVG_NS, 'rect');
+          r.setAttribute('x', prim.x); r.setAttribute('y', prim.y);
+          r.setAttribute('width', prim.w); r.setAttribute('height', prim.h);
+          r.setAttribute('fill', prim.fill || 'none');
+          r.setAttribute('stroke', prim.stroke || 'none');
+          r.setAttribute('stroke-width', prim.wd);
+          svg.appendChild(r);
+        } else if (prim.k === 'text') {
+          const t = document.createElementNS(SVG_NS, 'text');
+          t.setAttribute('x', prim.x);
+          t.setAttribute('y', prim.y + prim.size);
+          t.setAttribute('font-size', prim.size);
+          t.setAttribute('fill', prim.c);
+          t.setAttribute('font-family', 'Helvetica, Arial, sans-serif');
+          t.textContent = prim.t;
+          svg.appendChild(t);
+        }
+      }
+      node.appendChild(svg);
+    }
+
+    if (selected && selected.elId === el.id) {
+      node.classList.add('selected');
+      addHandles(node, pageIdx, el);
+    }
+
+    node.addEventListener('pointerdown', (e) => {
+      if (tool !== 'select') return; // creation tools work on the page itself
+      if (e.target.closest('.pdfed-handle')) return;
+      if (node.querySelector('.pdfed-text[contenteditable="true"]')) return;
+      e.stopPropagation();
+      // A click that lands on an already-selected text box (and isn't a
+      // drag) re-enters edit mode.
+      const wasSelected = !!(selected && selected.pageIdx === pageIdx && selected.elId === el.id);
+      setSelected(pageIdx, el.id);
+      if (el.type === 'layout') return;
+      startMove(e, pageIdx, el, () => {
+        if (el.type === 'text' && wasSelected) {
+          const fresh = pageNode(pageIdx).querySelector(`[data-elid="${el.id}"]`);
+          if (fresh) startTextEdit(fresh, pageIdx, el);
+        }
+      });
+    });
+
+    node.addEventListener('dblclick', (e) => {
+      if (el.type !== 'text') return;
+      e.stopPropagation();
+      startTextEdit(node, pageIdx, el);
+    });
+
+    node.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setSelected(pageIdx, el.id);
+      showContextMenu(e.clientX, e.clientY, [
+        { label: 'Copy', onClick: () => copyElement(pageIdx, el.id) },
+        { label: 'Duplicate', onClick: () => duplicateElement(pageIdx, el.id) },
+        { separator: true },
+        { label: 'Delete', danger: true, onClick: () => deleteElement(pageIdx, el.id) },
+      ]);
+    });
+
+    return node;
+  }
+
+  // ---------- Context menu ----------
+  let ctxMenuEl = null;
+
+  function closeContextMenu() {
+    ctxMenuEl?.remove();
+    ctxMenuEl = null;
+  }
+
+  function showContextMenu(clientX, clientY, items) {
+    closeContextMenu();
+    const menu = document.createElement('div');
+    menu.className = 'pdfed-ctx-menu';
+    items.forEach((item) => {
+      if (item.separator) {
+        const sep = document.createElement('div');
+        sep.className = 'pdfed-ctx-sep';
+        menu.appendChild(sep);
+        return;
+      }
+      const btn = document.createElement('button');
+      btn.className = `pdfed-ctx-item${item.danger ? ' danger' : ''}`;
+      btn.textContent = item.label;
+      btn.disabled = !!item.disabled;
+      btn.addEventListener('click', () => {
+        closeContextMenu();
+        item.onClick();
+      });
+      menu.appendChild(btn);
+    });
+    document.body.appendChild(menu);
+
+    // Clamp inside the viewport rather than letting it overflow.
+    const rect = menu.getBoundingClientRect();
+    const left = Math.max(4, Math.min(clientX, window.innerWidth - rect.width - 4));
+    const top = Math.max(4, Math.min(clientY, window.innerHeight - rect.height - 4));
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    ctxMenuEl = menu;
+  }
+
+  document.addEventListener('pointerdown', (e) => {
+    if (ctxMenuEl && !ctxMenuEl.contains(e.target)) closeContextMenu();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeContextMenu();
+  });
+  document.addEventListener('scroll', closeContextMenu, true);
+
+  // ---------- Selection, move & resize ----------
+  function setSelected(pageIdx, elId) {
+    const prev = selected;
+    selected = { pageIdx, elId };
+    if (prev && (prev.pageIdx !== pageIdx || prev.elId !== elId)) renderPage(prev.pageIdx);
+    renderPage(pageIdx);
+    syncPropsBar();
+  }
+
+  function clearSelection() {
+    if (!selected) return;
+    const prevPage = selected.pageIdx;
+    selected = null;
+    renderPage(prevPage);
+    syncPropsBar();
+  }
+
+  const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+
+  function addHandles(node, pageIdx, el) {
+    if (el.type === 'layout') return; // full-page, locked: selectable + deletable only
+    if (el.type === 'line') {
+      const b = elementBounds(el);
+      [['p1', el.x1, el.y1], ['p2', el.x2, el.y2]].forEach(([which, px, py]) => {
+        const h = document.createElement('div');
+        h.className = 'pdfed-handle pdfed-handle-point';
+        h.style.left = `${(px - b.x) * zoom - 6}px`;
+        h.style.top = `${(py - b.y) * zoom - 6}px`;
+        h.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          startLinePoint(e, pageIdx, el, which);
+        });
+        node.appendChild(h);
+      });
+      return;
+    }
+    if (el.type === 'ink') return; // strokes move as a whole, no resize
+    HANDLES.forEach((dir) => {
+      const h = document.createElement('div');
+      h.className = `pdfed-handle pdfed-handle-${dir}`;
+      h.dataset.dir = dir;
+      h.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        startResize(e, pageIdx, el, dir);
+      });
+      node.appendChild(h);
+    });
+  }
+
+  function pagePoint(e, pageIdx) {
+    const rect = pageNode(pageIdx).getBoundingClientRect();
+    return { x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom };
+  }
+
+  // Generic drag runner: snapshots for undo only if something actually
+  // moved. `onClick` (if given) fires instead, once, on pointerup.
+  function runDrag(e, onMove, onDone, onClick) {
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let moved = false;
+
+    function handleMove(ev) {
+      const dx = (ev.clientX - startX) / zoom;
+      const dy = (ev.clientY - startY) / zoom;
+      if (!moved && (Math.abs(ev.clientX - startX) > 2 || Math.abs(ev.clientY - startY) > 2)) {
+        moved = true;
+      }
+      if (moved) onMove(dx, dy);
+    }
+    function handleUp() {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+      if (moved) {
+        markDirty();
+        onDone?.();
+      } else {
+        onClick?.();
+      }
+    }
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+  }
+
+  function startMove(e, pageIdx, el, onClick) {
+    const before = JSON.stringify(model);
+    const orig = JSON.parse(JSON.stringify(el));
+    runDrag(e, (dx, dy) => {
+      if (el.type === 'line') {
+        el.x1 = orig.x1 + dx; el.y1 = orig.y1 + dy;
+        el.x2 = orig.x2 + dx; el.y2 = orig.y2 + dy;
+      } else if (el.type === 'ink') {
+        el.points = orig.points.map((p) => [p[0] + dx, p[1] + dy]);
+      } else {
+        el.x = orig.x + dx;
+        el.y = orig.y + dy;
+      }
+      renderPage(pageIdx);
+    }, () => {
+      undoStack.push(before);
+      if (undoStack.length > 60) undoStack.shift();
+      redoStack = [];
+    }, onClick);
+  }
+
+  function startResize(e, pageIdx, el, dir) {
+    const before = JSON.stringify(model);
+    const orig = JSON.parse(JSON.stringify(el));
+    const MIN = 8;
+    runDrag(e, (dx, dy) => {
+      let { x, y, w, h } = orig;
+      if (dir.includes('e')) w = orig.w + dx;
+      if (dir.includes('s')) h = orig.h + dy;
+      if (dir.includes('w')) { x = orig.x + dx; w = orig.w - dx; }
+      if (dir.includes('n')) { y = orig.y + dy; h = orig.h - dy; }
+      if (w < MIN) { if (dir.includes('w')) x -= MIN - w; w = MIN; }
+      if (h < MIN) { if (dir.includes('n')) y -= MIN - h; h = MIN; }
+      Object.assign(el, { x, y, w, h });
+      renderPage(pageIdx);
+    }, () => {
+      undoStack.push(before);
+      if (undoStack.length > 60) undoStack.shift();
+      redoStack = [];
+    });
+  }
+
+  function startLinePoint(e, pageIdx, el, which) {
+    const before = JSON.stringify(model);
+    const orig = JSON.parse(JSON.stringify(el));
+    runDrag(e, (dx, dy) => {
+      if (which === 'p1') { el.x1 = orig.x1 + dx; el.y1 = orig.y1 + dy; }
+      else { el.x2 = orig.x2 + dx; el.y2 = orig.y2 + dy; }
+      renderPage(pageIdx);
+    }, () => {
+      undoStack.push(before);
+      if (undoStack.length > 60) undoStack.shift();
+      redoStack = [];
+    });
+  }
+
+  // ---------- Creation tools ----------
+  function onPagePointerDown(e, pageIdx) {
+    if (e.button !== 0) return;
+
+    if (tool === 'select') {
+      if (!e.target.closest('.pdfed-el')) clearSelection();
+      return;
+    }
+
+    const pt = pagePoint(e, pageIdx);
+
+    if (tool === 'text') {
+      // Without this, the click lands on the page (not on the text box,
+      // which doesn't exist yet), so the browser's default mousedown
+      // handling blurs whatever we focus below right after this returns.
+      e.preventDefault();
+      pushUndo();
+      const el = {
+        id: nextId(),
+        type: 'text',
+        x: pt.x,
+        y: pt.y,
+        w: 180,
+        h: 26,
+        text: '',
+        fontSize: defaults.fontSize,
+        bold: defaults.bold,
+        italic: defaults.italic,
+        color: defaults.color,
+      };
+      model.pages[pageIdx].elements.push(el);
+      markDirty();
+      setTool('select');
+      setSelected(pageIdx, el.id);
+      const node = pageNode(pageIdx).querySelector(`[data-elid="${el.id}"]`);
+      if (node) startTextEdit(node, pageIdx, el);
+      return;
+    }
+
+    if (tool === 'rect' || tool === 'ellipse') {
+      createShapeByDrag(e, pageIdx, pt, tool);
+      return;
+    }
+
+    if (tool === 'line') {
+      createLineByDrag(e, pageIdx, pt);
+      return;
+    }
+
+    if (tool === 'pen' || tool === 'highlighter') {
+      startInkStroke(e, pageIdx, pt);
+    }
+  }
+
+  function onPageDblClick(e, pageIdx) {
+    // Double-clicking a text element already handled on the node itself.
+  }
+
+  function createShapeByDrag(e, pageIdx, start, kind) {
+    pushUndo();
+    const el = {
+      id: nextId(),
+      type: kind,
+      x: start.x,
+      y: start.y,
+      w: 1,
+      h: 1,
+      fill: defaults.fill,
+      stroke: defaults.stroke,
+      strokeWidth: defaults.strokeWidth,
+    };
+    model.pages[pageIdx].elements.push(el);
+    runDrag(e, (dx, dy) => {
+      el.x = dx < 0 ? start.x + dx : start.x;
+      el.y = dy < 0 ? start.y + dy : start.y;
+      el.w = Math.max(Math.abs(dx), 4);
+      el.h = Math.max(Math.abs(dy), 4);
+      renderPage(pageIdx);
+    }, null);
+    const finish = () => {
+      window.removeEventListener('pointerup', finish);
+      if (el.w < 4 && el.h < 4) { el.w = 120; el.h = 80; } // plain click → default size
+      markDirty();
+      setTool('select');
+      setSelected(pageIdx, el.id);
+    };
+    window.addEventListener('pointerup', finish);
+    renderPage(pageIdx);
+  }
+
+  function createLineByDrag(e, pageIdx, start) {
+    pushUndo();
+    const el = {
+      id: nextId(),
+      type: 'line',
+      x1: start.x,
+      y1: start.y,
+      x2: start.x + 1,
+      y2: start.y + 1,
+      stroke: defaults.stroke,
+      strokeWidth: defaults.strokeWidth,
+    };
+    model.pages[pageIdx].elements.push(el);
+    runDrag(e, (dx, dy) => {
+      el.x2 = start.x + dx;
+      el.y2 = start.y + dy;
+      renderPage(pageIdx);
+    }, null);
+    const finish = () => {
+      window.removeEventListener('pointerup', finish);
+      if (Math.abs(el.x2 - el.x1) < 2 && Math.abs(el.y2 - el.y1) < 2) el.x2 = el.x1 + 120;
+      markDirty();
+      setTool('select');
+      setSelected(pageIdx, el.id);
+    };
+    window.addEventListener('pointerup', finish);
+    renderPage(pageIdx);
+  }
+
+  function startInkStroke(e, pageIdx, start) {
+    const isHighlighter = tool === 'highlighter';
+    const points = [[start.x, start.y]];
+    const node = pageNode(pageIdx);
+    const drawLayer = node.querySelector('.pdfed-draw-layer');
+
+    const live = document.createElementNS(SVG_NS, 'path');
+    live.setAttribute('fill', 'none');
+    live.setAttribute('stroke', isHighlighter ? '#ffe066' : defaults.stroke);
+    live.setAttribute('stroke-width', isHighlighter ? 12 : defaults.strokeWidth);
+    live.setAttribute('stroke-linecap', 'round');
+    live.setAttribute('stroke-linejoin', 'round');
+    live.setAttribute('opacity', isHighlighter ? 0.4 : 1);
+    drawLayer.appendChild(live);
+
+    function pathD() {
+      return `M ${points[0][0]} ${points[0][1]} ` + points.slice(1).map((p) => `L ${p[0]} ${p[1]}`).join(' ');
+    }
+
+    function handleMove(ev) {
+      const pt = pagePoint(ev, pageIdx);
+      const last = points[points.length - 1];
+      if (Math.hypot(pt.x - last[0], pt.y - last[1]) > 1.2) {
+        points.push([pt.x, pt.y]);
+        live.setAttribute('d', pathD());
+      }
+    }
+    function handleUp() {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+      live.remove();
+      if (points.length > 1) {
+        pushUndo();
+        model.pages[pageIdx].elements.push({
+          id: nextId(),
+          type: 'ink',
+          points,
+          stroke: isHighlighter ? '#ffe066' : defaults.stroke,
+          strokeWidth: isHighlighter ? 12 : defaults.strokeWidth,
+          opacity: isHighlighter ? 0.4 : 1,
+        });
+        markDirty();
+        renderPage(pageIdx);
+      }
+    }
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+  }
+
+  // ---------- Text editing ----------
+  function startTextEdit(node, pageIdx, el) {
+    const inner = node.querySelector('.pdfed-text');
+    if (!inner || inner.isContentEditable) return;
+    inner.contentEditable = 'true';
+    node.classList.add('editing');
+    inner.focus();
+
+    // Place caret at end.
+    const range = document.createRange();
+    range.selectNodeContents(inner);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    const before = JSON.stringify(model);
+    function commit() {
+      inner.removeEventListener('blur', commit);
+      const newText = inner.innerText.replace(/\n$/, '');
+      inner.contentEditable = 'false';
+      node.classList.remove('editing');
+      if (newText !== (el.text || '')) {
+        undoStack.push(before);
+        if (undoStack.length > 60) undoStack.shift();
+        redoStack = [];
+        el.text = newText;
+        // Auto-grow the box to fit what was typed.
+        el.h = Math.max(el.h, inner.scrollHeight / zoom + 4);
+        markDirty();
+      }
+      renderPage(pageIdx);
+    }
+    inner.addEventListener('blur', commit);
+    inner.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') { ev.preventDefault(); inner.blur(); }
+      ev.stopPropagation(); // keep Delete/undo shortcuts from firing while typing
+    });
+  }
+
+  // ---------- Images ----------
+  async function insertImage() {
+    if (!model) return;
+    const picked = await window.dexlieAPI.pdf.pickImage();
+    if (!picked) return;
+
+    // Natural size, scaled down to fit nicely on the page.
+    const dims = await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      img.onerror = () => resolve({ w: 300, h: 200 });
+      img.src = picked.fileUrl;
+    });
+    const pageIdx = currentPageInView();
+    const page = model.pages[pageIdx];
+    const maxW = page.w * 0.55;
+    const scale = Math.min(1, maxW / dims.w);
+    const w = dims.w * scale;
+    const h = dims.h * scale;
+
+    pushUndo();
+    const el = {
+      id: nextId(),
+      type: 'image',
+      x: (page.w - w) / 2,
+      y: Math.max(40, (page.h - h) / 3),
+      w,
+      h,
+      src: picked.relPath,
+      fileUrl: picked.fileUrl,
+    };
+    page.elements.push(el);
+    markDirty();
+    setTool('select');
+    setSelected(pageIdx, el.id);
+  }
+
+  // The page whose top is closest to the viewport centre — used as the
+  // target for "insert here" actions like images.
+  function currentPageInView() {
+    const mid = scrollEl.scrollTop + scrollEl.clientHeight / 2;
+    let best = 0;
+    let bestDist = Infinity;
+    pagesEl.querySelectorAll('.pdfed-page').forEach((n, i) => {
+      const center = n.offsetTop + n.offsetHeight / 2;
+      const dist = Math.abs(center - mid);
+      if (dist < bestDist) { bestDist = dist; best = i; }
+    });
+    return best;
+  }
+
+  // ---------- Pages ----------
+  function addPage() {
+    if (!model) return;
+    pushUndo();
+    const last = model.pages[model.pages.length - 1];
+    model.pages.push({ bgIndex: null, w: last?.w || A4.w, h: last?.h || A4.h, elements: [] });
+    markDirty();
+    renderAll();
+    requestAnimationFrame(() => { scrollEl.scrollTop = scrollEl.scrollHeight; });
+  }
+
+  function deletePage(i) {
+    if (model.pages.length <= 1) return;
+    if (!confirm(`Delete page ${i + 1}? Elements on it will be lost.`)) return;
+    pushUndo();
+    model.pages.splice(i, 1);
+    selected = null;
+    markDirty();
+    renderAll();
+  }
+
+  // ---------- Zoom ----------
+  function setZoom(z) {
+    if (!model) return;
+    zoom = Math.min(3, Math.max(0.4, z));
+    renderAll();
+  }
+
+  // ---------- Toolbar wiring ----------
+  function setTool(name) {
+    tool = name;
+    syncToolButtons();
+    pagesEl.classList.toggle('creating', tool !== 'select');
+    pagesEl.classList.toggle('inking', tool === 'pen' || tool === 'highlighter');
+  }
+
+  function syncToolButtons() {
+    document.querySelectorAll('#view-pdf-editor [data-tool]').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.tool === tool);
+    });
+  }
+
+  // Props bar: shows the selected element's properties, or the defaults for
+  // the next element when nothing is selected.
+  let syncingProps = false;
+
+  function syncPropsBar() {
+    syncingProps = true;
+    const el = getSelectedElement();
+    fontSizeInput.value = String(el?.fontSize ?? defaults.fontSize);
+    boldBtn.classList.toggle('active', !!(el ? el.bold : defaults.bold));
+    italicBtn.classList.toggle('active', !!(el ? el.italic : defaults.italic));
+    colorInput.value = (el?.color || el?.stroke || defaults.color);
+    fillInput.value = (el && 'fill' in el && el.fill) ? el.fill : defaults.fill;
+    noFillBtn.classList.toggle('active', !!(el && 'fill' in el && !el.fill));
+    strokeWInput.value = String(el?.strokeWidth ?? defaults.strokeWidth);
+    syncingProps = false;
+  }
+
+  function applyProp(mutate) {
+    if (syncingProps) return;
+    const el = getSelectedElement();
+    if (el) {
+      pushUndo();
+      mutate(el);
+      markDirty();
+      renderPage(selected.pageIdx);
+    } else {
+      mutate(defaults);
+    }
+  }
+
+  function initToolbar() {
+    document.querySelectorAll('#view-pdf-editor [data-tool]').forEach((btn) => {
+      btn.addEventListener('click', () => setTool(btn.dataset.tool));
+    });
+
+    document.getElementById('pdfed-image-btn')?.addEventListener('click', insertImage);
+
+    // Properties.
+    fontSizeInput?.addEventListener('change', () => {
+      const size = Math.min(200, Math.max(6, Number(fontSizeInput.value) || 14));
+      applyProp((t) => { t.fontSize = size; });
+    });
+    boldBtn?.addEventListener('click', () => {
+      applyProp((t) => { t.bold = !t.bold; });
+      syncPropsBar();
+    });
+    italicBtn?.addEventListener('click', () => {
+      applyProp((t) => { t.italic = !t.italic; });
+      syncPropsBar();
+    });
+    colorInput?.addEventListener('input', () => {
+      applyProp((t) => {
+        if (t.type === 'text') t.color = colorInput.value;
+        else if (t.type) t.stroke = colorInput.value;
+        else { t.color = colorInput.value; t.stroke = colorInput.value; } // defaults
+      });
+    });
+    fillInput?.addEventListener('input', () => {
+      applyProp((t) => { t.fill = fillInput.value; });
+      noFillBtn.classList.remove('active');
+    });
+    noFillBtn?.addEventListener('click', () => {
+      applyProp((t) => { t.fill = null; });
+      syncPropsBar();
+    });
+    strokeWInput?.addEventListener('change', () => {
+      const wd = Math.min(40, Math.max(0.5, Number(strokeWInput.value) || 2));
+      applyProp((t) => { t.strokeWidth = wd; });
+    });
+
+    // Undo / redo / zoom / pages.
+    document.getElementById('pdfed-undo')?.addEventListener('click', undo);
+    document.getElementById('pdfed-redo')?.addEventListener('click', redo);
+    document.getElementById('pdfed-zoom-in')?.addEventListener('click', () => setZoom(zoom + 0.15));
+    document.getElementById('pdfed-zoom-out')?.addEventListener('click', () => setZoom(zoom - 0.15));
+    document.getElementById('pdfed-add-page')?.addEventListener('click', addPage);
+
+    // Keep the page fit to the scroll area's width as the window resizes.
+    window.addEventListener('resize', () => {
+      if (!model || !document.getElementById('view-pdf-editor')?.classList.contains('active')) return;
+      zoom = fitZoomToWidth();
+      renderAll();
+    });
+
+    // Save / back.
+    document.getElementById('pdfed-save-btn')?.addEventListener('click', () => save(false));
+    document.getElementById('pdfed-back-btn')?.addEventListener('click', async () => {
+      if (dirty) await save(true);
+      showView('notes');
+      onCloseCallback?.();
+    });
+
+    titleInput?.addEventListener('input', markDirty);
+
+    // Keyboard shortcuts, only while the editor is the active view and the
+    // user isn't typing into a text box or input.
+    document.addEventListener('keydown', (e) => {
+      const viewActive = document.getElementById('view-pdf-editor')?.classList.contains('active');
+      if (!viewActive || !model) return;
+      const typing = e.target.isContentEditable
+        || e.target.tagName === 'INPUT'
+        || e.target.tagName === 'TEXTAREA';
+      if (typing) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault(); undo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+        e.preventDefault(); redo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault(); save(false);
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selected) { e.preventDefault(); deleteSelected(); }
+      } else if (e.key === 'Escape') {
+        clearSelection();
+        setTool('select');
+      } else if (e.key.startsWith('Arrow') && selected) {
+        e.preventDefault();
+        const el = getSelectedElement();
+        if (!el || el.type === 'layout') return;
+        const step = e.shiftKey ? 10 : 1;
+        const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+        const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+        pushUndo();
+        if (el.type === 'line') { el.x1 += dx; el.y1 += dy; el.x2 += dx; el.y2 += dy; }
+        else if (el.type === 'ink') el.points = el.points.map((p) => [p[0] + dx, p[1] + dy]);
+        else { el.x += dx; el.y += dy; }
+        markDirty();
+        renderPage(selected.pageIdx);
+      }
+    });
+  }
+
+  // ---------- Saving ----------
+  async function save(silent) {
+    if (!note || !model) return;
+    setStatus('Saving…');
+    try {
+      const title = titleInput.value.trim() || 'Untitled note';
+      const updated = await window.dexlieAPI.pdf.save(note.id, model, title);
+      if (updated) note = updated;
+      dirty = false;
+      setStatus(silent ? '' : 'Saved');
+      if (!silent) setTimeout(() => { if (!dirty) setStatus(''); }, 2000);
+    } catch (err) {
+      console.error('PDF save failed:', err);
+      setStatus('Save failed — see console');
+    }
+  }
+
+  initToolbar();
+}
+
+// ---------- Notes page + Note editor ----------
+// Everything for the Notes feature: the folder tree, list rendering/search,
+// and the note editor screen. Data is persisted via window.dexlieAPI.
+{
+  // ---------- Folder tree (Subjects > Chapters > Topics) ----------
+  let folders = [];
+
+  async function refreshFolders() {
+    folders = await window.dexlieAPI.folders.list();
+    renderFolderTree();
+    renderClassifyTree();
+    renderFolderOptions();
+  }
+
+  function buildChildrenMap() {
+    const childrenByParent = new Map();
+    folders.forEach((f) => {
+      const key = f.parentId ?? 'root';
+      if (!childrenByParent.has(key)) childrenByParent.set(key, []);
+      childrenByParent.get(key).push(f);
+    });
+    return childrenByParent;
+  }
+
+  function toggleTreeRow(li, row) {
+    const open = li.classList.toggle('open');
+    li.classList.toggle('collapsed', !open);
+    const chevron = row.querySelector('.chev-toggle use');
+    if (chevron) chevron.setAttribute('href', open ? '#icon-chevron-up' : '#icon-chevron-right');
+  }
+
+  // ---------- Sidebar tree (read-only) ----------
+  const subjectsHeaderRow = document.querySelector('.tree-root > .tree-row.tree-toggle');
+  subjectsHeaderRow?.addEventListener('click', () => {
+    toggleTreeRow(subjectsHeaderRow.closest('.tree-root'), subjectsHeaderRow);
+  });
+
+  const folderTreeRootEl = document.getElementById('folder-tree-root');
+
+  function buildReadOnlyFolderNode(folder, childrenByParent) {
+    const children = childrenByParent.get(folder.id) || [];
+    const hasChildren = children.length > 0;
+
+    const li = document.createElement('li');
+    li.className = 'open';
+
+    const row = document.createElement('div');
+    row.className = hasChildren ? 'tree-row tree-toggle' : 'tree-row';
+    row.innerHTML = `
+      ${hasChildren
+        ? '<svg class="icon chev-toggle"><use href="#icon-chevron-up"/></svg>'
+        : '<svg class="icon" style="visibility:hidden"><use href="#icon-chevron-up"/></svg>'}
+      <svg class="icon"><use href="#icon-folder"/></svg>
+      <span></span>
+    `;
+    row.querySelector('span').textContent = folder.name;
+    li.appendChild(row);
+
+    const childUl = document.createElement('ul');
+    children.forEach((child) => childUl.appendChild(buildReadOnlyFolderNode(child, childrenByParent)));
+    li.appendChild(childUl);
+
+    if (hasChildren) {
+      row.addEventListener('click', () => toggleTreeRow(li, row));
+    }
+
+    return li;
+  }
+
+  function renderFolderTree() {
+    if (!folderTreeRootEl) return;
+    folderTreeRootEl.innerHTML = '';
+    const childrenByParent = buildChildrenMap();
+    const topLevel = childrenByParent.get('root') || [];
+    topLevel.forEach((folder) => folderTreeRootEl.appendChild(buildReadOnlyFolderNode(folder, childrenByParent)));
+  }
+
+  // ---------- Classify panel tree (editable) ----------
+  const classifyTreeRootEl = document.getElementById('classify-tree-root');
+
+  function buildClassifyFolderNode(folder, childrenByParent) {
+    const children = childrenByParent.get(folder.id) || [];
+    const hasChildren = children.length > 0;
+
+    const li = document.createElement('li');
+    li.className = 'open';
+
+    const row = document.createElement('div');
+    row.className = hasChildren ? 'tree-row tree-toggle' : 'tree-row';
+    row.innerHTML = `
+      ${hasChildren
+        ? '<svg class="icon chev-toggle"><use href="#icon-chevron-up"/></svg>'
+        : '<svg class="icon" style="visibility:hidden"><use href="#icon-chevron-up"/></svg>'}
+      <svg class="icon"><use href="#icon-folder"/></svg>
+      <span class="classify-folder-name"></span>
+      <span class="classify-row-actions">
+        <button class="tree-action-btn" data-action="add" title="Add inside">+</button>
+        <button class="tree-action-btn" data-action="rename" title="Rename">Rename</button>
+        <button class="tree-action-btn tree-action-danger" data-action="delete" title="Delete">Delete</button>
+      </span>
+    `;
+    row.querySelector('.classify-folder-name').textContent = folder.name;
+    li.appendChild(row);
+
+    const childUl = document.createElement('ul');
+    children.forEach((child) => childUl.appendChild(buildClassifyFolderNode(child, childrenByParent)));
+    li.appendChild(childUl);
+
+    if (hasChildren) {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.classify-row-actions')) return;
+        toggleTreeRow(li, row);
+      });
+    }
+
+    row.querySelector('[data-action="add"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      startInlineAddFolder(childUl, folder.id);
+    });
+    row.querySelector('[data-action="rename"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      startInlineRenameFolder(row, folder);
+    });
+    row.querySelector('[data-action="delete"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      startInlineDeleteConfirm(li, row, folder);
+    });
+
+    return li;
+  }
+
+  function renderClassifyTree() {
+    if (!classifyTreeRootEl) return;
+    classifyTreeRootEl.innerHTML = '';
+    const childrenByParent = buildChildrenMap();
+    const topLevel = childrenByParent.get('root') || [];
+    topLevel.forEach((folder) => classifyTreeRootEl.appendChild(buildClassifyFolderNode(folder, childrenByParent)));
+  }
+
+  document.getElementById('classify-add-subject-btn')?.addEventListener('click', () => {
+    if (classifyTreeRootEl) startInlineAddFolder(classifyTreeRootEl, null);
+  });
+
+  // Inline "new folder" input — Enter/blur confirms, Escape/empty blur cancels.
+  function startInlineAddFolder(targetUl, parentId) {
+    const existingForm = targetUl.querySelector('.tree-add-form');
+    if (existingForm) {
+      existingForm.querySelector('input')?.focus();
+      return;
+    }
+
+    const li = document.createElement('li');
+    li.className = 'tree-add-form';
+    li.innerHTML = `
+      <div class="tree-row tree-add-row">
+        <svg class="icon"><use href="#icon-folder"/></svg>
+        <input type="text" class="tree-add-input" placeholder="Folder name" />
+      </div>
+    `;
+    targetUl.insertBefore(li, targetUl.firstChild);
+
+    const input = li.querySelector('input');
+    // Deferred by a frame: focusing immediately after inserting a brand-new
+    // node doesn't always land in Chromium.
+    requestAnimationFrame(() => input.focus());
+
+    let settled = false;
+    async function confirmAdd() {
+      if (settled) return;
+      settled = true;
+      const name = input.value.trim();
+      if (name) {
+        await window.dexlieAPI.folders.create({ name, parentId });
+        await refreshFolders();
+      } else {
+        li.remove();
+      }
+    }
+    function cancel() {
+      if (settled) return;
+      settled = true;
+      li.remove();
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmAdd();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancel();
+      }
+    });
+    input.addEventListener('blur', () => {
+      setTimeout(() => { if (!settled) confirmAdd(); }, 100);
+    });
+  }
+
+  // Inline rename — swaps the folder's name span for a text input in place.
+  function startInlineRenameFolder(row, folder) {
+    const nameSpan = row.querySelector('.classify-folder-name');
+    if (!nameSpan || row.querySelector('.tree-add-input')) return;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'tree-add-input';
+    input.value = folder.name;
+    nameSpan.replaceWith(input);
+    requestAnimationFrame(() => {
+      input.focus();
+      input.select();
+    });
+
+    let settled = false;
+    async function confirmRename() {
+      if (settled) return;
+      settled = true;
+      const name = input.value.trim();
+      if (name && name !== folder.name) {
+        await window.dexlieAPI.folders.rename(folder.id, name);
+        await refreshFolders();
+      } else {
+        await refreshFolders(); // just re-render to restore the plain span
+      }
+    }
+    function cancel() {
+      if (settled) return;
+      settled = true;
+      refreshFolders();
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmRename();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancel();
+      }
+    });
+    input.addEventListener('blur', () => {
+      setTimeout(() => { if (!settled) confirmRename(); }, 100);
+    });
+  }
+
+  // Inline delete confirmation — offers the two distinct choices, since
+  // "Delete Folder" and "Delete Whole" do very different things.
+  function startInlineDeleteConfirm(li, row, folder) {
+    const existing = li.querySelector(':scope > .classify-delete-confirm');
+    if (existing) return;
+
+    const notesInSubtree = countNotesInFolderSubtree(folder.id);
+
+    const confirmEl = document.createElement('div');
+    confirmEl.className = 'classify-delete-confirm';
+    confirmEl.innerHTML = `
+      <span>Delete "${folder.name}"?</span>
+      <button data-choice="folder">Delete folder only</button>
+      <button data-choice="whole" class="tree-action-danger">Delete folder + everything inside</button>
+      <button data-choice="cancel">Cancel</button>
+    `;
+    li.insertBefore(confirmEl, row.nextSibling);
+
+    confirmEl.querySelector('[data-choice="folder"]').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await window.dexlieAPI.folders.delete(folder.id);
+      await refreshFolders();
+      await refreshNotes();
+    });
+    confirmEl.querySelector('[data-choice="whole"]').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const proceed = confirm(
+        notesInSubtree > 0
+          ? `This permanently deletes ${notesInSubtree} note${notesInSubtree === 1 ? '' : 's'} and their files inside "${folder.name}" — this cannot be undone. Continue?`
+          : `Delete "${folder.name}" and everything inside it? This cannot be undone.`
+      );
+      if (!proceed) return;
+      await window.dexlieAPI.folders.deleteCascade(folder.id);
+      await refreshFolders();
+      await refreshNotes();
+    });
+    confirmEl.querySelector('[data-choice="cancel"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      confirmEl.remove();
+    });
+  }
+
+  // Client-side count of notes under a folder (including the folder itself),
+  // used only to word the "Delete Whole" confirmation.
+  function countNotesInFolderSubtree(folderId) {
+    const childrenByParent = buildChildrenMap();
+    const ids = new Set([folderId]);
+    const queue = [folderId];
+    while (queue.length) {
+      const current = queue.shift();
+      (childrenByParent.get(current) || []).forEach((child) => {
+        ids.add(child.id);
+        queue.push(child.id);
+      });
+    }
+    return notes.filter((n) => n.folderId != null && ids.has(n.folderId)).length;
+  }
+
+  // Flat "Subject", "Subject › Chapter", "Subject › Chapter › Topic" list,
+  // shared by the note editor's folder dropdown and the Classify panel's
+  // assignment dropdown.
+  function buildFolderOptionsList() {
+    const childrenByParent = buildChildrenMap();
+    const options = [];
+    function walk(folder, prefix) {
+      const label = prefix ? `${prefix} › ${folder.name}` : folder.name;
+      options.push({ id: folder.id, label });
+      (childrenByParent.get(folder.id) || []).forEach((child) => walk(child, label));
+    }
+    (childrenByParent.get('root') || []).forEach((folder) => walk(folder, ''));
+    return options;
+  }
+
+  function populateFolderSelect(selectEl) {
+    if (!selectEl) return;
+    const previousValue = selectEl.value;
+    selectEl.innerHTML = '<option value="">Uncategorized</option>';
+    buildFolderOptionsList().forEach((opt) => {
+      const optionEl = document.createElement('option');
+      optionEl.value = String(opt.id);
+      optionEl.textContent = opt.label;
+      selectEl.appendChild(optionEl);
+    });
+    selectEl.value = previousValue;
+  }
+
+  function renderFolderOptions() {
+    populateFolderSelect(editorFolder);
+    populateFolderSelect(document.getElementById('classify-folder-select'));
+  }
+
+  const BADGE_BY_TYPE = {
+    PDF: 'badge-red',
+    DOCX: 'badge-blue',
+    ONE: 'badge-purple',
+    XLSX: 'badge-green',
+    MD: 'badge-yellow',
+    TXT: 'badge-gray',
+  };
+
+  function byteSize(text) {
+    const bytes = new Blob([text]).size;
+    if (bytes < 1024) return `${bytes} B`;
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return { date, time };
+  }
+
+  // ---------- In-memory copy of the notes table, for rendering ----------
+  let notes = [];
+
+  async function refreshNotes() {
+    notes = await window.dexlieAPI.notes.list();
+    renderNotesList();
+    renderClassifyNoteOptions();
+  }
+
+  // ---------- List rendering ----------
+  const notesListEl = document.getElementById('notes-list');
+  const notesCount = document.getElementById('notes-count');
+  const notesSearch = document.getElementById('notes-search');
+  const uncategorizedCountEl = document.getElementById('uncategorized-count');
+
+  // Types the plain text editor renders in-app; PDFs go to the canvas
+  // editor, everything else opens externally.
+  const IN_APP_TYPES = new Set(['TXT', 'MD']);
+
+  function renderNotesList() {
+    const query = (notesSearch?.value || '').trim().toLowerCase();
+    const filtered = notes
+      .filter((n) => n.title.toLowerCase().includes(query))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    notesListEl.innerHTML = '';
+    filtered.forEach((note) => {
+      const { date, time } = formatDate(note.createdAt);
+      const sizeLabel = note.sizeLabel || byteSize(note.content);
+      const row = document.createElement('div');
+      row.className = 'note-row';
+      row.dataset.id = note.id;
+      row.innerHTML = `
+        <div class="note-icon ${BADGE_BY_TYPE[note.type] || 'badge-gray'}">${note.type}</div>
+        <div class="note-info">
+          <div class="note-title"></div>
+          <div class="note-path"></div>
+          <div class="note-meta">${note.type} &bull; ${sizeLabel}</div>
+        </div>
+        <div class="note-date">${date}<br><span class="note-time">${time}</span></div>
+        <button class="icon-btn note-reveal-btn" title="Reveal in folder"><svg class="icon"><use href="#icon-folder"/></svg></button>
+        <button class="icon-btn note-delete-btn"><svg class="icon"><use href="#icon-trash"/></svg></button>
+      `;
+      row.querySelector('.note-title').textContent = note.title;
+      row.querySelector('.note-path').textContent = note.folderPath;
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.note-delete-btn') || e.target.closest('.note-reveal-btn')) return;
+        const type = (note.type || '').toUpperCase();
+        if (type === 'PDF') {
+          openPdfEditor(note, refreshNotes); // PDFs are viewed AND edited in the canvas editor
+        } else if (IN_APP_TYPES.has(type)) {
+          openEditor(note.id);
+        } else {
+          window.dexlieAPI.notes.openExternal(note.id);
+        }
+      });
+      row.querySelector('.note-reveal-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.dexlieAPI.notes.revealInFolder(note.id);
+      });
+      row.querySelector('.note-delete-btn').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm(`Delete "${note.title}"?`)) {
+          await window.dexlieAPI.notes.delete(note.id);
+          await refreshNotes();
+        }
+      });
+      notesListEl.appendChild(row);
+    });
+
+    if (notesCount) notesCount.textContent = `${filtered.length} note${filtered.length === 1 ? '' : 's'}`;
+    if (uncategorizedCountEl) {
+      uncategorizedCountEl.textContent = String(notes.filter((n) => n.folderId == null).length);
+    }
+  }
+
+  if (notesSearch) notesSearch.addEventListener('input', renderNotesList);
+
+  // ---------- List / grid toggle ----------
+  document.querySelectorAll('[data-notes-view]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-notes-view]').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      notesListEl?.classList.toggle('grid-view', btn.dataset.notesView === 'grid');
+    });
+  });
+
+  // ---------- Editor ----------
+  let editingId = null;
+
+  const editorTitle = document.getElementById('editor-title');
+  const editorFolder = document.getElementById('editor-folder');
+  const editorContent = document.getElementById('editor-content');
+  const editorLastEdit = document.getElementById('editor-lastedit');
+  const editorDeleteBtn = document.getElementById('editor-delete-btn');
+
+  function openEditor(id) {
+    const note = notes.find((n) => n.id === id);
+    if (!note) return;
+    editingId = id;
+
+    editorTitle.value = note.title;
+    editorFolder.value = note.folderId != null ? String(note.folderId) : '';
+    const { date, time } = formatDate(note.createdAt);
+    editorLastEdit.textContent = `Last edited ${date} at ${time}`;
+    editorDeleteBtn.hidden = false;
+
+    editorContent.value = note.content;
+
+    showView('note-editor');
+    editorTitle.focus();
+  }
+
+  document.getElementById('editor-back-btn')?.addEventListener('click', () => showView('notes'));
+
+  document.getElementById('editor-save-btn')?.addEventListener('click', async () => {
+    if (!editingId) return;
+    const title = editorTitle.value.trim() || 'Untitled note';
+    const folderId = editorFolder.value ? Number(editorFolder.value) : null;
+    const content = editorContent.value;
+
+    await window.dexlieAPI.notes.update(editingId, { title, folderId, content });
+    await refreshNotes();
+    showView('notes');
+  });
+
+  editorDeleteBtn?.addEventListener('click', async () => {
+    if (!editingId) return;
+    const note = notes.find((n) => n.id === editingId);
+    if (note && confirm(`Delete "${note.title}"?`)) {
+      await window.dexlieAPI.notes.delete(editingId);
+      await refreshNotes();
+      showView('notes');
+    }
+  });
+
+  // ---------- Create Note (layout picker: Blank / preset layouts) ----------
+  // Every note created here is a PDF, opened straight into the canvas editor.
+  const createNoteBtn = document.getElementById('create-note-btn');
+  const noteTypeMenu = document.getElementById('note-type-menu');
+  const noteTypeStepPick = document.getElementById('note-type-step-pick');
+  const noteTypeStepTitle = document.getElementById('note-type-step-title');
+  const noteTypeTitleInput = document.getElementById('note-type-title-input');
+  const noteTypeConfirmBtn = document.getElementById('note-type-confirm-btn');
+  let pendingLayout = null; // 'blank' | a LAYOUTS[].id
+
+  // "Blank" plus every preset in LAYOUTS.
+  function buildNoteLayoutOptions() {
+    const blankBtn = document.createElement('button');
+    blankBtn.className = 'note-type-option';
+    blankBtn.dataset.layout = 'blank';
+    blankBtn.textContent = 'Blank';
+    noteTypeStepPick.appendChild(blankBtn);
+
+    LAYOUTS.forEach((l) => {
+      const btn = document.createElement('button');
+      btn.className = 'note-type-option';
+      btn.dataset.layout = l.id;
+      btn.textContent = l.name;
+      noteTypeStepPick.appendChild(btn);
+    });
+
+    noteTypeStepPick.querySelectorAll('.note-type-option').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        pendingLayout = btn.dataset.layout;
+        noteTypeStepPick.hidden = true;
+        noteTypeStepTitle.hidden = false;
+        noteTypeTitleInput.value = 'Untitled note';
+        noteTypeTitleInput.focus();
+        noteTypeTitleInput.select();
+      });
+    });
+  }
+  buildNoteLayoutOptions();
+
+  function resetNoteTypeMenu() {
+    noteTypeStepPick.hidden = false;
+    noteTypeStepTitle.hidden = true;
+    noteTypeTitleInput.value = '';
+    pendingLayout = null;
+  }
+
+  function closeNoteTypeMenu() {
+    noteTypeMenu.hidden = true;
+    resetNoteTypeMenu();
+  }
+
+  createNoteBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const opening = noteTypeMenu.hidden;
+    noteTypeMenu.hidden = !noteTypeMenu.hidden;
+    if (opening) resetNoteTypeMenu();
+  });
+  noteTypeMenu?.addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', () => {
+    if (noteTypeMenu && !noteTypeMenu.hidden) closeNoteTypeMenu();
+  });
+
+  async function confirmCreateNote() {
+    if (!pendingLayout) return;
+    const layout = pendingLayout;
+    const title = noteTypeTitleInput.value.trim() || 'Untitled note';
+    closeNoteTypeMenu();
+
+    const note = await window.dexlieAPI.notes.createBlank({ title, type: 'pdf', folderId: null });
+    await refreshNotes();
+    openPdfEditor(note, refreshNotes, layout === 'blank' ? null : layout); // straight into the canvas editor
+  }
+
+  noteTypeConfirmBtn?.addEventListener('click', confirmCreateNote);
+  noteTypeTitleInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmCreateNote();
+    }
+  });
+
+  // ---------- Import Notes ----------
+  document.getElementById('import-notes-btn')?.addEventListener('click', async () => {
+    const filePath = await window.dexlieAPI.notes.pickFile();
+    if (!filePath) return;
+    await window.dexlieAPI.notes.importFile(filePath);
+    await refreshNotes();
+  });
+
+  // ---------- "..." menu + Classify panel ----------
+  const notesMoreBtn = document.getElementById('notes-more-btn');
+  const notesMoreMenu = document.getElementById('notes-more-menu');
+  const classifyOpenBtn = document.getElementById('classify-open-btn');
+  const classifyOverlay = document.getElementById('classify-overlay');
+  const classifyCloseBtn = document.getElementById('classify-close-btn');
+  const classifyNoteSelect = document.getElementById('classify-note-select');
+  const classifyFolderSelect = document.getElementById('classify-folder-select');
+  const classifyAssignBtn = document.getElementById('classify-assign-btn');
+
+  notesMoreBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    notesMoreMenu.hidden = !notesMoreMenu.hidden;
+  });
+  notesMoreMenu?.addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', () => {
+    if (notesMoreMenu && !notesMoreMenu.hidden) notesMoreMenu.hidden = true;
+  });
+
+  function openClassifyPanel() {
+    notesMoreMenu.hidden = true;
+    classifyOverlay.hidden = false;
+    renderClassifyTree();
+    renderFolderOptions();
+    renderClassifyNoteOptions();
+  }
+  function closeClassifyPanel() {
+    classifyOverlay.hidden = true;
+  }
+
+  classifyOpenBtn?.addEventListener('click', openClassifyPanel);
+  classifyCloseBtn?.addEventListener('click', closeClassifyPanel);
+  classifyOverlay?.addEventListener('click', (e) => {
+    if (e.target === classifyOverlay) closeClassifyPanel();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && classifyOverlay && !classifyOverlay.hidden) closeClassifyPanel();
+  });
+
+  // Note picker for the "add a note to a folder" assignment.
+  function renderClassifyNoteOptions() {
+    if (!classifyNoteSelect) return;
+    const previousValue = classifyNoteSelect.value;
+    classifyNoteSelect.innerHTML = '';
+    notes.forEach((note) => {
+      const optionEl = document.createElement('option');
+      optionEl.value = note.id;
+      optionEl.textContent = `${note.title} (currently: ${note.folderPath})`;
+      classifyNoteSelect.appendChild(optionEl);
+    });
+    if (previousValue) classifyNoteSelect.value = previousValue;
+  }
+
+  classifyAssignBtn?.addEventListener('click', async () => {
+    const noteId = classifyNoteSelect?.value;
+    if (!noteId) return;
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    const folderId = classifyFolderSelect.value ? Number(classifyFolderSelect.value) : null;
+
+    await window.dexlieAPI.notes.update(noteId, { title: note.title, folderId });
+    await refreshNotes();
+  });
+
+  refreshNotes();
+  refreshFolders();
+}
+
+console.log('Dexlie renderer loaded.');
+</script>
+</body>
+</html>
